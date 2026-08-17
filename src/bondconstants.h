@@ -15,6 +15,46 @@
 #  define _BONDCONSTANTS_H_
 #include <ultra64.h>
 #include <CPPLib.h>
+typedef enum PLAYERFLAG {
+    PLAYERFLAG_NONE = 0,
+    PLAYERFLAG_LOCKCONTROLS = 1 << 0,
+    PLAYERFLAG_NOCONTROL    = 1 << 1,
+    PLAYERFLAG_NOTIMER      = 1 << 2
+} PLAYERFLAG;
+typedef enum RUNTIMEBITFLAG {
+    RUNTIMEBITFLAG_NONE = 0,
+    RUNTIMEBITFLAG_00000001 = 1 << 0,
+    RUNTIMEBITFLAG_00000002 = 1 << 1,
+    RUNTIMEBITFLAG_REMOVE   = 1 << 2,
+    RUNTIMEBITFLAG_ISRETICK = 1 << 3,
+    RUNTIMEBITFLAG_TAGGED   = 1 << 4,
+    RUNTIMEBITFLAG_THROWING_KNIFE_RELATED = 1 << 5,
+    RUNTIMEBITFLAG_EMBEDDED = 1 << 6,
+    RUNTIMEBITFLAG_HASPROJECTILE = 1 << 7,
+    RUNTIMEBITFLAG_00000100 = 1 << 8,
+    RUNTIMEBITFLAG_BEENOPENED = 1 << 9,
+    RUNTIMEBITFLAG_DESTROYED = 1 << 10,
+    RUNTIMEBITFLAG_00000800 = 1 << 11,
+    RUNTIMEBITFLAG_00001000 = 1 << 12,
+    RUNTIMEBITFLAG_PADLOCKEDDOOR = 1 << 13,
+    RUNTIMEBITFLAG_ACTIVATED = 1 << 14,
+    RUNTIMEBITFLAG_00008000 = 1 << 15,
+    RUNTIMEBITFLAG_00010000 = 1 << 16,
+    RUNTIMEBITFLAG_00020000 = 1 << 17,
+    RUNTIMEBITFLAG_00040000 = 1 << 18,
+    RUNTIMEBITFLAG_HASOWNER = 1 << 19,
+    RUNTIMEBITFLAG_00100000 = 1 << 20,
+    RUNTIMEBITFLAG_00200000 = 1 << 21,
+    RUNTIMEBITFLAG_00400000 = 1 << 22,
+    RUNTIMEBITFLAG_00800000 = 1 << 23,
+    RUNTIMEBITFLAG_01000000 = 1 << 24,
+    RUNTIMEBITFLAG_02000000 = 1 << 25,
+    RUNTIMEBITFLAG_04000000 = 1 << 26,
+    RUNTIMEBITFLAG_08000000 = 1 << 27,
+    RUNTIMEBITFLAG_10000000 = 1 << 28,
+    RUNTIMEBITFLAG_20000000 = 1 << 29,
+    RUNTIMEBITFLAG_40000000 = 1 << 30
+} RUNTIMEBITFLAG;
 
 #pragma region Tools
 #ifdef __INTELLISENSE__
@@ -4711,7 +4751,7 @@ typedef enum PROJECTILES
  * @param NUMJOINTS: (Optional Integer) Number of Joints
  */
 #define New_ModelSkeleton(NAME, SKELSIZE, HASNAMES, NUMJOINTS) \
-    ModelSkeleton SKELETON(##NAME##) = {                   \
+    ModelSkeleton SKELETON(NAME) = {                   \
     IF_ELSE(IS_EMPTY(NUMJOINTS))                           \
     (                                                      \
         sizeof(JOINTLIST(NAME))/sizeof(ModelJoint)         \
@@ -4720,7 +4760,7 @@ typedef enum PROJECTILES
         NUMJOINTS                                          \
     ),                                                     \
     0,                                                     \
-    JOINTLIST(##NAME##),                                   \
+    JOINTLIST(NAME),                                   \
     SKELSIZE,                                              \
     0                                                      \
     IF(AND(DEFINED(DEBUG), BOOL(HASNAMES)))                \
@@ -4729,7 +4769,7 @@ typedef enum PROJECTILES
     )                                                      \
     };
 
-#define MODELSKELETON(NAME, NUMJOINTS, SKELSIZE) ModelSkeleton SKELETON( ## NAME ## ) = {NUMJOINTS, 0, JOINTLIST( ## NAME ## ), SKELSIZE, 0};
+#define MODELSKELETON(NAME, NUMJOINTS, SKELSIZE) ModelSkeleton SKELETON(NAME) = {NUMJOINTS, 0, JOINTLIST(NAME), SKELSIZE, 0};
 
 
 /**
@@ -4809,28 +4849,19 @@ typedef enum PROJECTILES
 #endif
 
 #define CHRFILERECORD(NAME, SCALE, OFFSET, HASHEAD, ISMALE) \
-    {&##NAME##_header, STR(C##NAME##Z), SCALE, OFFSET, HASHEAD, ISMALE},
+    {&NAME##_header, STR(C##NAME##Z), SCALE, OFFSET, HASHEAD, ISMALE},
 
-#define GUNSTATS(NAME) & ## NAME ## _stats
+#define GUNSTATS(NAME) &NAME##_stats
 #define GUNFILERECORD(NAME, NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ) \
-    { & ## NAME ## _header,STR(G## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
+    { &NAME##_header,STR(G## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
 #define SUIT_LFRECORD(NAME, NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ) \
-    { & ## NAME ## _header,STR(C## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
+    { &NAME##_header,STR(C## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
 /**
  * Define a New Item Record
  * @param NAME:  Name of Model
  * @param SCALE: (Optional float) Scale of Model
  */
-#define PROPFILERECORD(NAME, SCALE)        \
-    {&NAME ## _header, STR(P ## NAME ##Z), \
-    IF_ELSE(IS_EMPTY(SCALE))               \
-    (                                      \
-        0.1                                \
-    )                                      \
-    (                                      \
-        SCALE                              \
-    )                                      \
-},
+#define PROPFILERECORD(NAME, SCALE) {&NAME ## _header, STR(P ## NAME ##Z), (f32)(SCALE)},
 
 #define forever for (;;)
 

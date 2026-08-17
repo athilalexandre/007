@@ -5107,7 +5107,7 @@ s32 bgGetPortalBetweenRooms(s32 room1, s32 room2, coord3d *arg2, coord3d *arg3)
     s32 portalIndex = -1;
 
     #ifndef DEBUG
-        #define osSyncPrintf(x)
+        #define osSyncPrintf(...)
     #endif
 
     for (i = 0; g_BgPortals[i].offset_portal != NULL; i++)

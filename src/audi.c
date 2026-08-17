@@ -1,4 +1,6 @@
 #include <ultra64.h>
+#include <string.h>
+void *setSPToEnd(u8 *stack, u32 size);
 #include <PR/os.h>
 #include "sched.h"
 #include "audi.h"
@@ -359,7 +361,7 @@ void amCreateAudioManager(ALSynConfig* alconf)
 
     if (alconf->fxType == AL_FX_CUSTOM)
     {
-        s32 sp48[CUSTOM_FX_SECTION_COUNT * CUSTOM_FX_SECTION_SIZE + 2] = CUSTOM_FX_PARAMS_N;
+        s32 sp48[CUSTOM_FX_SECTION_COUNT * CUSTOM_FX_SECTION_SIZE + 2]; memcpy(sp48, CUSTOM_FX_PARAMS_N, sizeof(sp48));
         alconf->params = sp48;
         alInit(&g_AudioManager.g, alconf);
     }
@@ -424,7 +426,7 @@ void amMain(void* arg)
 	s16 *msg = NULL;
 	AudioInfo *info = NULL;
 
-	osScAddClient(&os_scheduler, &g_AudioClient[0], &g_AudioManager.frameMessageQueue, 1);
+	osScAddClient(&os_scheduler, &g_AudioClient[0], &g_AudioManager.frameMessageQueue, (OSScClient *)1);
 
 	while (!done) {
 		osRecvMesg(&g_AudioManager.frameMessageQueue, (OSMesg *) &msg, OS_MESG_BLOCK);

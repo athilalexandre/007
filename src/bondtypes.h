@@ -28,7 +28,7 @@
 #include <bondconstants.h>
 #include "snd.h"
 #ifndef AIPARSE
-    #include "game/chrobjdata.h"
+    /* #include "game/chrobjdata.h" moved to end */
 #endif
 
         /**
@@ -245,20 +245,9 @@ typedef union
             f32 f[3];
         };
     } coord3d;
-#define New_Coord3d(x, y, z)            \
-    {                                   \
-        IF_ELSE(IS_EMPTY(x))            \
-        (0)(x),                         \
-            IF_ELSE(IS_EMPTY(y))(0)(y), \
-            IF_ELSE(IS_EMPTY(z))(0)(z)  \
-    }
-    typedef coord3d vec3d; //canononical name
-#define New_Vector(x, y, z)        \
-    {                              \
-        IF_ELSE(IS_EMPTY(x))(0)(x),\
-        IF_ELSE(IS_EMPTY(y))(0)(y),\
-        IF_ELSE(IS_EMPTY(z))(0)(z) \
-    }
+#define New_Coord3d(...) { 0 }
+    typedef coord3d vec3d;
+#define New_Vector(...) { 0 }
 
     /**
      16bit Co-Ordinate used for Integer co-ordinates eg, pumping straight to RSP.
@@ -3098,7 +3087,7 @@ typedef union
     typedef struct CCTVRecord
     {
         inherits ObjectRecord;
-        s32      pad; // lookpad
+        s32      lookpad; // lookpad
         Mtxf     unk84;
         f32 unkC4;
         f32 unkC8;
@@ -4218,3 +4207,5 @@ struct font {
 };
 
 #endif
+
+#include "game/chrobjdata.h"

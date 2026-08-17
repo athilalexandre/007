@@ -1,3 +1,5 @@
+#include <stddef.h>
+#include <stdint.h>
 #ifndef _ULTRA64_TYPES_H_
 #define _ULTRA64_TYPES_H_
 

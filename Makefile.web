@@ -11,10 +11,10 @@ LD := emcc
 
 # Build target
 BUILD_DIR := build/web
-TARGET := $(BUILD_DIR)/goldeneye007.html
+TARGET := $(BUILD_DIR)/goldeneye007.js
 
 # Compiler flags
-CFLAGS := \
+CFLAGS := -D_LANGUAGE_C -DTARGET_WEB -DVERSION_US -DLANG_US -DREFRESH_NTSC -fms-extensions -Wno-microsoft-anon-tag -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types \
     -DTARGET_WEB \
     -DVERSION_US \
     -DLANG_US \
@@ -49,11 +49,11 @@ LDFLAGS := \
     -s INITIAL_MEMORY=67108864 \
     -s MAXIMUM_MEMORY=268435456 \
     -s STACK_SIZE=1048576 \
-    -s EXPORTED_FUNCTIONS="['_main','_hal_input_set_pad','_hal_os_set_rom_data']" \
-    -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']" \
+    -s EXPORTED_FUNCTIONS="['_main','_hal_input_set_pad','_hal_os_set_rom_data','_malloc','_free']" \
+    -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','setValue','getValue','HEAPU8','UTF8ToString','stringToUTF8']" \
     -s ASYNCIFY \
     -s ASSERTIONS=1 \
-    --shell-file web/shell.html \
+    \
     -lidbfs.js
 
 # Source files
@@ -63,8 +63,8 @@ SRC_C_SOURCES := \
     src/audi.c src/boss.c src/cfb.c src/crash.c src/deb.c \
     src/debugmenu.c src/fr.c src/init.c src/joy.c src/mema.c \
     src/memp.c src/motor.c src/music.c src/pi.c src/ramrom.c \
-    src/rmon.c src/sched.c src/snd.c src/speed_graph.c \
-    src/sprintf.c src/stacks.c src/str.c src/tlb_manage.c \
+    src/rmon.c src/snd.c src/speed_graph.c \
+    src/stacks.c src/str.c src/tlb_manage.c \
     src/token.c src/usb.c src/vi.c src/c_data_filler.c
 
 PLATFORM_SOURCES := \

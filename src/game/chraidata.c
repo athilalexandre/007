@@ -1,3 +1,5 @@
+#define FLAGS2_DONT_POINT_AT_BOND 0x08
+#define FLAGS2_04 0x04
 /*========================================================================
  * chraidata.c
  *
@@ -111,7 +113,7 @@ u8 m_StandardGuard[] = {
             IFPlayingAnimation(lblNext)        /*CONTNUE*/
             IFNewRandomGreaterThan(1, lblNext) /* 1/255 chance of playing new animation else continue */
             /*Default*/
-            CALL( GAILIST_PLAY_IDLE_ANIMATION) /* play idle animation and return to list */
+            CALL(GAILIST_PLAY_IDLE_ANIMATION) /* play idle animation and return to list */
 
         Label(lblNext)
 
@@ -120,13 +122,13 @@ u8 m_StandardGuard[] = {
 
     Label(lblNearMiss) /* bond shot near guard */
         IFNewRandomGreaterThan(127, lblSeesBond) /* 50% chance of playing looking around animation */
-        CALL( GAILIST_STARTLE_AND_RUN_TO_BOND)
+        CALL(GAILIST_STARTLE_AND_RUN_TO_BOND)
 
     Label(lblSeesBond) /* guard sees bond */
-        CALL( GAILIST_ATTACK_BOND)
+        CALL(GAILIST_ATTACK_BOND)
 
     Label(lblBuddyShot) /* guard saw someone shot/die or guard was shot themselves */
-        CALL( GAILIST_RUN_TO_BOND)
+        CALL(GAILIST_RUN_TO_BOND)
 
     Label(lblCloneContinue) /* guard heard bond, attempt to spawn clone (only if chr has clone flag) */
         SetReturnAiList(THIS) // This command is useless
@@ -134,7 +136,7 @@ u8 m_StandardGuard[] = {
 
     Label(lblDead) /* guard has died, end routine */
         /*PRINT("DIE INSCAN\n")*/
-        JumpTo( GAILIST_DEAD_AI)
+        JumpTo(GAILIST_DEAD_AI)
     EndList()
 
     /*Undefine THIS and redefine for every script that wants to CALL subroutines*/
@@ -149,7 +151,7 @@ u8 m_StandardGuard[] = {
     return to List set by SetReturnAiList - If not set will crash
  */
 u8 m_IdleAnimations[] = {
-#if 0
+#if 1
     IFNewRandomGreaterThan(50, lblNext) /* generate annd compare random seed to see which animation to play */
     PlayAnimation(ANIM_yawning, 0, 193, ANIM_IDLE_POSE_WHEN_COMPLETE | ANIM_PLAY_SFX, ANIM_DEFAULT_INTERPOLATION)
         GotoNext(lblDone) /* jump to end, we're done */
@@ -213,7 +215,6 @@ u8 m_IdleAnimations[] = {
     return to List set by SetReturnAiList - If not set will crash
  */
 u8 m_BashKeyboard[] = {
-    #if 0
     IFNewRandomGreaterThan(60, lblNext)
     PlayAnimation(ANIM_keyboard_right_hand1, 0, 69, 0x00, ANIM_DEFAULT_INTERPOLATION)
     GotoNext(lblDone) /* jump to end, we're done */
@@ -232,22 +233,6 @@ u8 m_BashKeyboard[] = {
         PlayAnimation(ANIM_keyboard_right_hand_tapping, 0, 89, 0x00, ANIM_DEFAULT_INTERPOLATION)
         GotoNext(lblDone) /* jump to end, we're done */
     Label(lblDone)
-        #endif
-    SWITCH(SetNewRandom(),
-        IFRandomGreaterThan,180,
-            PlayAnimation(ANIM_keyboard_right_hand_tapping, 0, 89, 0x00, ANIM_DEFAULT_INTERPOLATION)
-            BREAK,
-        IFRandomGreaterThan,120,
-            PlayAnimation(ANIM_keyboard_left_hand, 0, 79, 0x00, ANIM_DEFAULT_INTERPOLATION)
-            BREAK,
-        IFRandomGreaterThan,60,
-            PlayAnimation(ANIM_keyboard_right_hand2, 0, 74, 0x00, ANIM_DEFAULT_INTERPOLATION)
-            BREAK,
-        /*DEFAULT*/,,
-            PlayAnimation(ANIM_keyboard_right_hand1, 0, 69, 0x00, ANIM_DEFAULT_INTERPOLATION)
-            BREAK,
-    )
-
     Return()
     EndList()};
 
@@ -390,7 +375,7 @@ u8 m_RunToBond[] = {
     LOOP(lblLoop)
 
     Label(lblSeesBond)
-        JumpTo( GAILIST_ATTACK_BOND)
+        JumpTo(GAILIST_ATTACK_BOND)
 
     Label(lblStoppedMoving)
         Return()
@@ -406,19 +391,19 @@ u8 m_RunToBond[] = {
 u8 m_TryCloneSendOrRunToBond[] = {
     SetMyFlags2(FLAGS2_DONT_POINT_AT_BOND)            /* I am aware of bond, so won't point at him */
     IFIveNotBeenSeen(lblCloneContinue)
-    JumpTo( GAILIST_RUN_TO_BOND)
+    JumpTo(GAILIST_RUN_TO_BOND)
 
     Label(lblCloneContinue)
         IFMyCloneDoesNotExist(lblCloneContinue)       /* Ive not been seen, test for clone existance */
-        JumpTo( GAILIST_STANDARD_GUARD)               /* we only want 1 clone */
+        JumpTo(GAILIST_STANDARD_GUARD)               /* we only want 1 clone */
 
     Label(lblCloneContinue)                           /* clone didnt exist, create one */
         TRYCloningMe(GAILIST_STANDARD_CLONE, lblNext) /* Assign AI to clone */
-        JumpTo( GAILIST_RUN_TO_BOND)                  /* clone failed to spawn (not enough memory/guard doesn't have clone flag on),
+        JumpTo(GAILIST_RUN_TO_BOND)                  /* clone failed to spawn (not enough memory/guard doesn't have clone flag on),
                                                          Its all down to me now. */
 
     Label(lblNext)                                    /* if clone spawn was successful */
-        JumpTo( GAILIST_STANDARD_GUARD)               /* I'll sit tight while the clone does all the work, giving the
+        JumpTo(GAILIST_STANDARD_GUARD)               /* I'll sit tight while the clone does all the work, giving the
                                                          illusion that the level is a crowded complex */
     EndList()
 };
@@ -538,7 +523,7 @@ u8 m_StartleAndRunToBond[] = {
     LOOP(lblLoop)
 
     Label(lblDone) /* chr stopped moving */
-        JumpTo( GAILIST_RUN_TO_BOND)
+        JumpTo(GAILIST_RUN_TO_BOND)
     EndList()
 };
 
@@ -587,7 +572,7 @@ u8 m_RunToBondPersistent[] = {
 
     /*DO*/
     Label(lblMaybeThrowGrenade)
-        #if 0
+        #if 1
             IFNewRandomGreaterThan(10, lblNext)
             TRYThrowingGrenade(lblDone) /* depends on chr->grenadeprob value */
 
@@ -720,7 +705,7 @@ u8 m_WaitOneSecond[] = {
  */
 u8 m_EndLevel[] = {
     EndLevel()
-    JumpTo( GAILIST_DEAD_AI)
+    JumpTo(GAILIST_DEAD_AI)
     EndList()
 };
 
@@ -781,7 +766,7 @@ u8 m_DrawPistolAndAttackBond[] = {
  */
 u8 m_RemoveSelf[] = {
     RemoveMeInstantly() /* remove self */
-    JumpTo( GAILIST_DEAD_AI)
+    JumpTo(GAILIST_DEAD_AI)
     EndList()
 };
 

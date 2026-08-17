@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldenEye 007 Web - 16-Player Multiplayer & Campaign Co-Op</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600;700&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="classified-theme">
+    <div class="radar-scan-bg"></div>
+    <div class="vignette-overlay"></div>
+
+    <div id="app-root">
+        <header id="classified-header">
+            <div class="logo-group">
+                <div class="classified-badge">TOP SECRET // MI6</div>
+                <h1 class="logo-title">GOLDENEYE <span class="logo-accent">007</span> <span class="badge-web">WEB / WASM</span></h1>
+            </div>
+            <div class="network-status" id="network-status">
+                <span class="status-dot online"></span>
+                <span id="status-text">NETWORK READY (16-PLAYER CAPABLE)</span>
+                <span class="ping-badge" id="ping-display">-- ms</span>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <section id="lobby-screen" class="view-panel active">
+                <div class="dossier-grid">
+                    <div class="dossier-card" id="agent-profile-card">
+                        <div class="card-header">
+                            <h2>// AGENT PROFILE</h2>
+                            <span class="card-id">FILE #007-HQ</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-field">
+                                <label for="agent-codename">CODENAME:</label>
+                                <input type="text" id="agent-codename" value="Bond" maxlength="16" placeholder="Enter Codename">
+                            </div>
+
+                            <div class="input-field">
+                                <label for="agent-character">CHARACTER:</label>
+                                <select id="agent-character">
+                                    <option value="0">James Bond (007)</option>
+                                    <option value="1">Natalya Simonova</option>
+                                    <option value="2">Alec Trevelyan (006)</option>
+                                    <option value="3">Boris Grishenko</option>
+                                    <option value="4">Xenia Onatopp</option>
+                                    <option value="5">General Ourumov</option>
+                                    <option value="6">Valentin Zukovsky</option>
+                                    <option value="7">Jaws</option>
+                                    <option value="8">Oddjob</option>
+                                    <option value="9">Mayday</option>
+                                    <option value="10">Baron Samedi</option>
+                                    <option value="11">Russian Soldier</option>
+                                    <option value="12">Siberian Guard</option>
+                                    <option value="13">Janus Special Forces</option>
+                                    <option value="14">Naval Officer</option>
+                                    <option value="15">Jungle Commando</option>
+                                </select>
+                            </div>
+
+                            <div class="rom-status-box" id="rom-status-box">
+                                <div class="rom-title">GAME ASSETS (N64 ROM):</div>
+                                <div class="rom-desc" id="rom-desc">Drag & drop your <code>GoldenEye 007 (U).z64</code> or use compiled WebAssembly engine:</div>
+                                <div class="rom-actions">
+                                    <label for="rom-file-input" class="btn-secondary" id="btn-browse-rom">
+                                        LOAD ROM FILE
+                                    </label>
+                                    <input type="file" id="rom-file-input" accept=".z64,.n64,.v64,.bin" style="display:none;">
+                                    <button type="button" class="btn-primary" id="btn-use-builtin-assets">
+                                        START ENGINE CORE
+                                    </button>
+                                </div>
+                                <div class="rom-indicator" id="rom-indicator">
+                                    <span class="indicator-icon">&#10004;</span> <span id="rom-indicator-text">Engine Core Ready</span>
+                                </div>
+                            </div>
+
+                            <div class="controls-preview">
+                                <h3>MODERN FPS CONTROLS:</h3>
+                                <ul>
+                                    <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> - Move / Strafe</li>
+                                    <li><kbd>MOUSE</kbd> - Look / Aim</li>
+                                    <li><kbd>LEFT CLICK</kbd> - Fire Weapon</li>
+                                    <li><kbd>RIGHT CLICK</kbd> - Aim Down Sights (Zoom)</li>
+                                    <li><kbd>R</kbd> - Reload</li>
+                                    <li><kbd>E</kbd> / <kbd>SPACE</kbd> - Action / Open Doors</li>
+                                    <li><kbd>C</kbd> / <kbd>CTRL</kbd> - Crouch / Duck</li>
+                                    <li><kbd>Q</kbd> / <kbd>1..9</kbd> - Cycle Weapons</li>
+                                    <li><kbd>TAB</kbd> - MI6 Q-Watch Menu / Briefing</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dossier-card" id="mode-lobby-card">
+                        <div class="card-header">
+                            <h2>// MISSION SELECTION</h2>
+                            <span class="card-id">16 AGENTS MAXIMUM</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="mode-tabs">
+                                <button class="mode-tab-btn active" data-mode="coop" id="tab-coop">
+                                    CAMPAIGN CO-OP (1-16)
+                                </button>
+                                <button class="mode-tab-btn" data-mode="multi" id="tab-multi">
+                                    16-PLAYER MULTIPLAYER
+                                </button>
+                            </div>
+
+                            <div class="mode-config-panel" id="coop-config-panel">
+                                <div class="input-field">
+                                    <label for="coop-stage-select">MISSION OBJECTIVE / STAGE:</label>
+                                    <select id="coop-stage-select">
+                                        <optgroup label="ACT I: SEVERNAYA">
+                                            <option value="dam">01. Dam (Byelomorye, USSR)</option>
+                                            <option value="facility" selected>02. Facility (Chemical Warfare)</option>
+                                            <option value="runway">03. Runway (Arkhangelsk)</option>
+                                            <option value="surface">04. Surface I (Severnaya)</option>
+                                            <option value="bunker">05. Bunker I (Satellite Control)</option>
+                                        </optgroup>
+                                        <optgroup label="ACT II: ST. PETERSBURG">
+                                            <option value="silo">06. Silo (Missile Silo)</option>
+                                            <option value="frigate">07. Frigate (Monte Carlo / La Fayette)</option>
+                                            <option value="surface2">08. Surface II (Winter Bunker)</option>
+                                            <option value="bunker2">09. Bunker II (Extract Natalya)</option>
+                                            <option value="statue">10. Statue Park (St. Petersburg)</option>
+                                            <option value="archives">11. Military Archives (Escape)</option>
+                                            <option value="streets">12. Streets (Tank Pursuit)</option>
+                                            <option value="depot">13. Depot (Trevelyan's Train)</option>
+                                            <option value="train">14. Train (Alec Trevelyan / Xenia)</option>
+                                        </optgroup>
+                                        <optgroup label="ACT III: CUBA & BONUS">
+                                            <option value="jungle">15. Jungle (Cuba)</option>
+                                            <option value="control">16. Control Center (Severnaya Link)</option>
+                                            <option value="caverns">17. Caverns (Water Plant)</option>
+                                            <option value="cradle">18. Cradle (Dish Antenna Finale)</option>
+                                            <option value="aztec">19. Aztec Complex (Bonus / Drax)</option>
+                                            <option value="egyptian">20. Egyptian (Golden Gun Temple)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+
+                                <div class="input-field">
+                                    <label for="coop-difficulty">DIFFICULTY LEVEL:</label>
+                                    <select id="coop-difficulty">
+                                        <option value="0">Agent (Standard)</option>
+                                        <option value="1" selected>Secret Agent (More Objectives)</option>
+                                        <option value="2">00 Agent (Classified / Maximum Security)</option>
+                                        <option value="3">007 Custom (Custom Enemy React/Health)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mode-config-panel hidden" id="multi-config-panel">
+                                <div class="input-field">
+                                    <label for="mp-scenario-select">SCENARIO:</label>
+                                    <select id="mp-scenario-select">
+                                        <option value="0">Normal (Individual Deathmatch)</option>
+                                        <option value="1">Team Deathmatch (Red vs Blue)</option>
+                                        <option value="2">You Only Live Twice (Limited Lives)</option>
+                                        <option value="3">The Living Daylights (Flag Tag)</option>
+                                        <option value="4">The Man With The Golden Gun</option>
+                                        <option value="5">Licence to Kill (One-Hit Kills)</option>
+                                    </select>
+                                </div>
+
+                                <div class="input-field">
+                                    <label for="mp-arena-select">ARENA MAP:</label>
+                                    <select id="mp-arena-select">
+                                        <option value="temple">Temple</option>
+                                        <option value="complex" selected>Complex</option>
+                                        <option value="caves">Caves</option>
+                                        <option value="library">Library / Stack</option>
+                                        <option value="basement">Basement</option>
+                                        <option value="facility_mp">Facility (Multiplayer)</option>
+                                        <option value="bunker_mp">Bunker (Multiplayer)</option>
+                                        <option value="archives_mp">Archives (Multiplayer)</option>
+                                        <option value="caverns_mp">Caverns (Multiplayer)</option>
+                                        <option value="cradle_mp">Cradle (Multiplayer)</option>
+                                    </select>
+                                </div>
+
+                                <div class="input-field">
+                                    <label for="mp-weapons-select">WEAPON SET:</label>
+                                    <select id="mp-weapons-select">
+                                        <option value="0">Pistols (PPK, TT33, Silenced)</option>
+                                        <option value="1">Automatics (KF7 Soviet, D5K, Klobb, Phantom)</option>
+                                        <option value="2">Power Weapons (AR33, RC-P90, Shotgun, Magnum)</option>
+                                        <option value="3">Sniper Rifles (Sniper + Pistols)</option>
+                                        <option value="4">Grenades & Mines (Remote, Proximity, Timed)</option>
+                                        <option value="5">Rockets & Explosives (Rocket Launcher, GL)</option>
+                                        <option value="6">Lasers & Golden Gun (Moonraker Laser)</option>
+                                        <option value="7">Slappers Only! (Melee Fists)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="lobby-room-section">
+                                <div class="room-action-bar">
+                                    <button type="button" class="btn-action btn-host" id="btn-create-room">
+                                        CREATE 16-PLAYER ROOM
+                                    </button>
+                                    <div class="join-room-box">
+                                        <input type="text" id="room-code-input" placeholder="ROOM CODE (e.g. 007-HQ)" maxlength="12">
+                                        <button type="button" class="btn-action btn-join" id="btn-join-room">
+                                            JOIN ROOM
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="agent-roster-box">
+                                    <div class="roster-header">
+                                        <h3>AGENT SQUAD LIST (<span id="agent-count">1</span>/16 PLAYERS)</h3>
+                                        <span class="room-code-badge" id="current-room-badge">ROOM: 007-LOCAL</span>
+                                    </div>
+                                    <div class="roster-list" id="roster-list">
+                                        <div class="roster-item host">
+                                            <span class="player-num">P1</span>
+                                            <span class="player-name">Bond (You)</span>
+                                            <span class="player-character">James Bond</span>
+                                            <span class="player-badge host-badge">HOST</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="launch-actions">
+                                    <button type="button" class="btn-launch-primary" id="btn-start-game">
+                                        DEPLOY TO MISSION (START GAME)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="game-screen" class="view-panel">
+                <div class="canvas-wrapper" id="canvas-wrapper">
+                    <canvas id="goldeneye-canvas" width="640" height="480" tabindex="1"></canvas>
+
+                    <div id="hud-overlay" class="hud-overlay">
+                        <div class="hud-top-bar">
+                            <div class="hud-mission-info">
+                                <div class="hud-stage-name" id="hud-stage-title">FACILITY // CHEMICAL WARFARE</div>
+                                <div class="hud-objectives-box" id="hud-objectives-box">
+                                    <div class="obj-item complete"><span class="obj-check">&#10004;</span> A. Gain entry to laboratory area</div>
+                                    <div class="obj-item pending"><span class="obj-check">&#9675;</span> B. Rendezvous with 006</div>
+                                    <div class="obj-item pending"><span class="obj-check">&#9675;</span> C. Destroy bottling tanks (0/10)</div>
+                                    <div class="obj-item pending"><span class="obj-check">&#9675;</span> D. Minimize scientist casualties</div>
+                                </div>
+                            </div>
+
+                            <div class="hud-killfeed" id="hud-killfeed"></div>
+                        </div>
+
+                        <div class="hud-top-right">
+                            <div class="radar-container" id="radar-container">
+                                <div class="radar-sweep"></div>
+                                <div class="radar-blip-self"></div>
+                                <div id="radar-blips-container"></div>
+                            </div>
+                            <div class="teammate-health-list" id="teammate-health-list"></div>
+                        </div>
+
+                        <div class="hud-bottom-left">
+                            <div class="gauge-bar-group">
+                                <div class="gauge-label">ARMOR</div>
+                                <div class="gauge-track armor-track">
+                                    <div class="gauge-fill armor-fill" id="hud-armor-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div class="gauge-bar-group">
+                                <div class="gauge-label">HEALTH</div>
+                                <div class="gauge-track health-track">
+                                    <div class="gauge-fill health-fill" id="hud-health-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hud-bottom-right">
+                            <div class="hud-weapon-name" id="hud-weapon-name">PPK (SILENCED)</div>
+                            <div class="hud-ammo-counter">
+                                <span class="ammo-clip" id="hud-ammo-clip">7</span>
+                                <span class="ammo-slash">/</span>
+                                <span class="ammo-reserve" id="hud-ammo-reserve">50</span>
+                            </div>
+                        </div>
+
+                        <div class="hud-crosshair" id="hud-crosshair">
+                            <div class="ch-dot"></div>
+                            <div class="ch-line ch-top"></div>
+                            <div class="ch-line ch-bottom"></div>
+                            <div class="ch-line ch-left"></div>
+                            <div class="ch-line ch-right"></div>
+                        </div>
+
+                        <div class="damage-flash" id="damage-flash"></div>
+
+                        <div class="mouse-lock-hint" id="mouse-lock-hint">
+                            CLICK TO ENGAGE AGENT CONTROLS (<kbd>ESC</kbd> TO UNLOCK)
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer id="classified-footer">
+            <div class="footer-left">
+                <span>SYSTEM: <strong style="color: #00f0ff;">N64 DECOMP C ENGINE (WASM)</strong></span>
+                <span>RENDERER: <strong style="color: #00ff88;">WebGL 2.0 / GBI F3DEX</strong></span>
+                <span>MULTIPLAYER: <strong style="color: #ffaa00;">16-PLAYER MESH</strong></span>
+            </div>
+            <div class="footer-right">
+                <button type="button" class="footer-btn" id="btn-toggle-fullscreen">FULLSCREEN</button>
+                <button type="button" class="footer-btn" id="btn-toggle-sound">AUDIO</button>
+                <button type="button" class="footer-btn" id="btn-return-lobby" style="display:none;">EXIT MISSION</button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="network.js"></script>
+    <script src="controls.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

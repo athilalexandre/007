@@ -3,6 +3,7 @@
 
 #include <ultra64.h>
 #include <bondtypes.h>
+#include <bondconstants.h>
 #include "chr.h"
 #include "matrixmath.h"
 #include "options.h"
@@ -2808,7 +2809,7 @@ f32 getPlayer_c_lodscalez(void);
 f32 bondviewGetBondBreathing(void);
 void     bondviewClearUpperTextDisplayFlag(int param_1);
 
-void     bondviewSetUpperTextDisplayFlag(PLAYERFLAG flag);
+void     bondviewSetUpperTextDisplayFlag(s32 flag);
 void     bondviewSetCameraMode(s32 arg0);
 bool     isBondInTank(void);
 void     hudmsgTopShow(char* string);

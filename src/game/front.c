@@ -2402,7 +2402,7 @@ s32 interface_menu05_fileselect(void)
         frontChangeMenu(MENU_MODE_SELECT, FALSE);
         setCursorPOSforMode(0);
 
-        return;
+        return 0;
     }
 
     // Change to the legal screen if 30 seconds of no input have elapsed

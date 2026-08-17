@@ -1,6 +1,7 @@
 #include <ultra64.h>
 #include <math.h>
 #include <bondtypes.h>
+#include <bondconstants.h>
 #include <boss.h>
 #include <fr.h>
 #include <joy.h>
@@ -9928,7 +9929,7 @@ void bondviewClearUpperTextDisplayFlag(int param_1)
 }
 
 
-void bondviewSetUpperTextDisplayFlag(PLAYERFLAG flag)
+void bondviewSetUpperTextDisplayFlag(s32 flag)
 {
     g_UpperTextDisplayFlag |= flag;
 }

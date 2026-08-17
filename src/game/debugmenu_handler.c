@@ -5,7 +5,7 @@
 #include <fr.h>
 
 #ifndef DEBUG
-    #define osSyncPrintf()
+    #define osSyncPrintf(...)
 #endif
 #if defined(LEFTOVERDEBUG)
 
