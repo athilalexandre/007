@@ -1,0 +1,100 @@
+# Makefile.web - GoldenEye 007 Web Port (Emscripten/WASM)
+# Usage: emmake make -f Makefile.web
+#
+# Prerequisites:
+#   - Emscripten SDK installed and activated (source emsdk_env.sh)
+#   - ROM assets already extracted (run extract_baserom.u.sh first on Linux/WSL)
+
+# Emscripten compiler
+CC := emcc
+LD := emcc
+
+# Build target
+BUILD_DIR := build/web
+TARGET := $(BUILD_DIR)/goldeneye007.html
+
+# Compiler flags
+CFLAGS := \
+    -DTARGET_WEB \
+    -DVERSION_US \
+    -DLANG_US \
+    -DREFRESH_NTSC \
+    -DLEFTOVERDEBUG \
+    -DLEFTOVERSPECTRUM \
+    -DBUGFIX_R0 \
+    -O2 \
+    -Wno-implicit-function-declaration \
+    -Wno-incompatible-pointer-types \
+    -Wno-int-conversion \
+    -Wno-pointer-sign \
+    -Wno-unused-variable \
+    -Wno-unused-but-set-variable \
+    -Wno-format
+
+# Include paths
+INCLUDES := \
+    -I . \
+    -I include \
+    -I include/PR \
+    -I src \
+    -I src/game \
+    -I src/inflate \
+    -I src/platform/include
+
+# Emscripten linker flags
+LDFLAGS := \
+    -s USE_WEBGL2=1 \
+    -s FULL_ES2=1 \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s INITIAL_MEMORY=67108864 \
+    -s MAXIMUM_MEMORY=268435456 \
+    -s STACK_SIZE=1048576 \
+    -s EXPORTED_FUNCTIONS="['_main','_hal_input_set_pad','_hal_os_set_rom_data']" \
+    -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap']" \
+    -s ASYNCIFY \
+    -s ASSERTIONS=1 \
+    --shell-file web/shell.html \
+    -lidbfs.js
+
+# Source files
+GAME_C_SOURCES := $(wildcard src/game/*.c)
+
+SRC_C_SOURCES := \
+    src/audi.c src/boss.c src/cfb.c src/crash.c src/deb.c \
+    src/debugmenu.c src/fr.c src/init.c src/joy.c src/mema.c \
+    src/memp.c src/motor.c src/music.c src/pi.c src/ramrom.c \
+    src/rmon.c src/sched.c src/snd.c src/speed_graph.c \
+    src/sprintf.c src/stacks.c src/str.c src/tlb_manage.c \
+    src/token.c src/usb.c src/vi.c src/c_data_filler.c
+
+PLATFORM_SOURCES := \
+    src/platform/web/hal_os.c \
+    src/platform/web/hal_gfx.c \
+    src/platform/web/hal_audio.c \
+    src/platform/web/random_c.c \
+    src/platform/web/math_sincos_c.c \
+    src/platform/web/main_web.c
+
+INFLATE_SOURCES := $(wildcard src/inflate/*.c)
+LIBULTRA_C_SOURCES := $(wildcard src/libultrare/*.c)
+
+ALL_SOURCES := $(SRC_C_SOURCES) $(GAME_C_SOURCES) $(PLATFORM_SOURCES) $(INFLATE_SOURCES) $(LIBULTRA_C_SOURCES)
+OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(ALL_SOURCES))
+
+.PHONY: all clean dirs
+
+all: dirs $(TARGET)
+	@echo "GoldenEye 007 Web Build Complete! Output: $(TARGET)"
+
+dirs:
+	@mkdir -p $(BUILD_DIR)
+
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(TARGET): $(OBJECTS)
+	$(LD) $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^
+
+clean:
+	rm -rf $(BUILD_DIR)
