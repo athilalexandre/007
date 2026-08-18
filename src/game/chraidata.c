@@ -149,7 +149,7 @@ u8 m_StandardGuard[] = {
     return to List set by SetReturnAiList - If not set will crash
  */
 u8 m_IdleAnimations[] = {
-#if 0
+#if 1
     IFNewRandomGreaterThan(50, lblNext) /* generate annd compare random seed to see which animation to play */
     PlayAnimation(ANIM_yawning, 0, 193, ANIM_IDLE_POSE_WHEN_COMPLETE | ANIM_PLAY_SFX, ANIM_DEFAULT_INTERPOLATION)
         GotoNext(lblDone) /* jump to end, we're done */
@@ -213,7 +213,7 @@ u8 m_IdleAnimations[] = {
     return to List set by SetReturnAiList - If not set will crash
  */
 u8 m_BashKeyboard[] = {
-    #if 0
+    #if 1
     IFNewRandomGreaterThan(60, lblNext)
     PlayAnimation(ANIM_keyboard_right_hand1, 0, 69, 0x00, ANIM_DEFAULT_INTERPOLATION)
     GotoNext(lblDone) /* jump to end, we're done */
@@ -232,7 +232,7 @@ u8 m_BashKeyboard[] = {
         PlayAnimation(ANIM_keyboard_right_hand_tapping, 0, 89, 0x00, ANIM_DEFAULT_INTERPOLATION)
         GotoNext(lblDone) /* jump to end, we're done */
     Label(lblDone)
-        #endif
+#else
     SWITCH(SetNewRandom(),
         IFRandomGreaterThan,180,
             PlayAnimation(ANIM_keyboard_right_hand_tapping, 0, 89, 0x00, ANIM_DEFAULT_INTERPOLATION)
@@ -247,7 +247,7 @@ u8 m_BashKeyboard[] = {
             PlayAnimation(ANIM_keyboard_right_hand1, 0, 69, 0x00, ANIM_DEFAULT_INTERPOLATION)
             BREAK,
     )
-
+#endif
     Return()
     EndList()};
 
@@ -587,7 +587,7 @@ u8 m_RunToBondPersistent[] = {
 
     /*DO*/
     Label(lblMaybeThrowGrenade)
-        #if 0
+        #if 1
             IFNewRandomGreaterThan(10, lblNext)
             TRYThrowingGrenade(lblDone) /* depends on chr->grenadeprob value */
 
@@ -790,24 +790,24 @@ u8 m_RemoveSelf[] = {
 /*D:8003744C */
 /* global ai lists (glists) */
 AIListRecord g_GlobalAILists[] = {
-    {m_AimAtBond               , GAILIST_AIM_AT_BOND},
-    {m_DeadAI                  , GAILIST_DEAD_AI},
-    {m_StandardGuard           , GAILIST_STANDARD_GUARD},
-    {m_IdleAnimations          , GAILIST_PLAY_IDLE_ANIMATION},
-    {m_BashKeyboard            , GAILIST_BASH_KEYBOARD},
-    {m_SimpleGuardDeaf         , GAILIST_SIMPLE_GUARD_DEAF},
-    {m_AttackBond              , GAILIST_ATTACK_BOND},
-    {m_SimpleGuard             , GAILIST_SIMPLE_GUARD},
-    {m_RunToBond               , GAILIST_RUN_TO_BOND},
-    {m_SimpleGuardAlarmRaiser  , GAILIST_SIMPLE_GUARD_ALARM_RAISER},
-    {m_StartleAndRunToBond     , GAILIST_STARTLE_AND_RUN_TO_BOND},
-    {m_TryCloneSendOrRunToBond , GAILIST_TRY_CLONE_SEND_OR_RUN_TO_BOND},
-    {m_StandardClone           , GAILIST_STANDARD_CLONE},
-    {m_RunToBondPersistent     , GAILIST_PERSISTENTLY_CHASE_AND_ATTACK_BOND},
-    {m_WaitOneSecond           , GAILIST_WAIT_ONE_SECOND},
-    {m_EndLevel                , GAILIST_END_LEVEL},
-    {m_DrawPistolAndAttackBond , GAILIST_DRAW_TT33_AND_ATTCK_BOND},
-    {m_RemoveSelf              , GAILIST_REMOVE_CHR},
+    {(AIRecord *)m_AimAtBond               , GAILIST_AIM_AT_BOND},
+    {(AIRecord *)m_DeadAI                  , GAILIST_DEAD_AI},
+    {(AIRecord *)m_StandardGuard           , GAILIST_STANDARD_GUARD},
+    {(AIRecord *)m_IdleAnimations          , GAILIST_PLAY_IDLE_ANIMATION},
+    {(AIRecord *)m_BashKeyboard            , GAILIST_BASH_KEYBOARD},
+    {(AIRecord *)m_SimpleGuardDeaf         , GAILIST_SIMPLE_GUARD_DEAF},
+    {(AIRecord *)m_AttackBond              , GAILIST_ATTACK_BOND},
+    {(AIRecord *)m_SimpleGuard             , GAILIST_SIMPLE_GUARD},
+    {(AIRecord *)m_RunToBond               , GAILIST_RUN_TO_BOND},
+    {(AIRecord *)m_SimpleGuardAlarmRaiser  , GAILIST_SIMPLE_GUARD_ALARM_RAISER},
+    {(AIRecord *)m_StartleAndRunToBond     , GAILIST_STARTLE_AND_RUN_TO_BOND},
+    {(AIRecord *)m_TryCloneSendOrRunToBond , GAILIST_TRY_CLONE_SEND_OR_RUN_TO_BOND},
+    {(AIRecord *)m_StandardClone           , GAILIST_STANDARD_CLONE},
+    {(AIRecord *)m_RunToBondPersistent     , GAILIST_PERSISTENTLY_CHASE_AND_ATTACK_BOND},
+    {(AIRecord *)m_WaitOneSecond           , GAILIST_WAIT_ONE_SECOND},
+    {(AIRecord *)m_EndLevel                , GAILIST_END_LEVEL},
+    {(AIRecord *)m_DrawPistolAndAttackBond , GAILIST_DRAW_TT33_AND_ATTCK_BOND},
+    {(AIRecord *)m_RemoveSelf              , GAILIST_REMOVE_CHR},
     {NULL, 0}
 };
 

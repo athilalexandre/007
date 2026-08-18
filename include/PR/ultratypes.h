@@ -76,9 +76,10 @@ typedef double                      f64; /* double prec floating point */
     typedef s32 intptr_t;
     typedef s32 ptrdiff_t;
 #else
-    #include <stddef.h>
-    #include <stdint.h>
-    typedef ptrdiff_t ssize_t;
+    typedef unsigned long size_t;
+    typedef long ssize_t;
+    typedef unsigned long uintptr_t;
+    typedef long intptr_t;
+    typedef long ptrdiff_t;
 #endif
-
 #endif /* _ULTRATYPES_H_ */
