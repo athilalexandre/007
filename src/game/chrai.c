@@ -167,7 +167,7 @@ s32 chraiitemsize(u8 *AIList, s32 offset)
                                      */ \
                 return CAT(CAT(AI_, CMDNAME), _LENGTH);
         #define _AI_DEBUG()
-        #define _AI_CMD_POLYMORPH(CMD, A, P, Q, D)
+        #define _AI_CMD_POLYMORPH(...)
         #define DEFINE(x)
         #include <aicommands.def>
     #endif
@@ -912,7 +912,7 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 // unfortunately we cannot use the cmdbuilder in matching rom as the ordering is not sequential
 #ifdef USECMDBUILDER
     #define _AI_DEBUG_ID(CMD, AI_NUMBER_OF_PARAMS, PARAM, DESC)
-    #define _AI_CMD_POLYMORPH(C, N, P1, P2, D)
+    #define _AI_CMD_POLYMORPH(...)
     #define _AI_CMD_ID(CMD, AI_NUMBER_OF_PARAMS, PARAM, DESC, CODE) /*  HACK: Multiline Comments make Newlines in macro */ \
         case CAT(CAT(AI_, CMD), ):                                  /*                                                     \
                                                                      */                                                    \

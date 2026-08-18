@@ -291,8 +291,7 @@
   @exception: AI_LIST_ID Must NOT be a BG List (10XX)
               THIS must be defined for this function to be able to return
 ******************************************************************************/
-#define CALL(AI_LIST_ID)  \
-                                  IF_ELSE (  DEFINED (  THIS )                     )  (  AI_ERR_NO_THIS   )  (  (                    SetReturnAiList(THIS)SetChrAiList(CHR_SELF, (!isBGAIListID(AI_LIST_ID) && isSubroutine(AI_LIST_ID) ? AI_LIST_ID : AI_ERR_NOTSUB)) )  )  ,
+#define CALL(AI_LIST_ID) SetReturnAiList(THIS) SetChrAiList(CHR_SELF, AI_LIST_ID)
 
 
 

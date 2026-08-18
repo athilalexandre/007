@@ -78,7 +78,7 @@ typedef double                      f64; /* double prec floating point */
 #else
     #include <stddef.h>
     #include <stdint.h>
-    typedef ptrdiff_t ssize_t;
+    /* ssize_t: defined by stddef.h on host (non-N64) */
 #endif
 
 #endif /* _ULTRATYPES_H_ */

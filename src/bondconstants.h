@@ -279,16 +279,18 @@ typedef enum GUARD_SETUP_FLAG // u16
 } GUARD_SETUP_FLAG;
 
 //chr flags2
-BITFLAG(FLAGS2,
-        DONT_POINT_AT_BOND,
-        02,
-        04
-)
+typedef enum FLAGS2 {
+    FLAGS2_NONE = 0,
+    FLAGS2_DONT_POINT_AT_BOND = 1 << 0,
+    FLAGS2_02 = 1 << 1,
+    FLAGS2_04 = 1 << 2
+} FLAGS2;
 
 //PROP SOUND (Unknown values, only name known)
-BITFLAG(PS_FLAGS2,
-        NO_DISTANCEQ
-)
+typedef enum PS_FLAGS2 {
+    PS_FLAGS2_NONE = 0,
+    PS_FLAGS2_NO_DISTANCEQ = 1 << 0
+} PS_FLAGS2;
 
 // prop definition flags
 typedef enum PROPFLAG
@@ -465,16 +467,17 @@ typedef enum PROJECTILEFLAG
 #define EMBEDMENTFLAG_FREE 0x00000001
 
 /* door lock flags*/
-BITFLAG(DOOR_LOCK,
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7
-)
+typedef enum DOOR_LOCK {
+    DOOR_LOCK_NONE = 0,
+    DOOR_LOCK_0 = 1 << 0,
+    DOOR_LOCK_1 = 1 << 1,
+    DOOR_LOCK_2 = 1 << 2,
+    DOOR_LOCK_3 = 1 << 3,
+    DOOR_LOCK_4 = 1 << 4,
+    DOOR_LOCK_5 = 1 << 5,
+    DOOR_LOCK_6 = 1 << 6,
+    DOOR_LOCK_7 = 1 << 7
+} DOOR_LOCK;
 
 /** PropDefHeaderRecord->state only u8 */
 typedef enum PROPSTATE {
@@ -502,46 +505,48 @@ typedef enum STANTILEFLAG
     STANTILEFLAG_LADDER      = 0x40
 } STANTILE_FLAG;
 
-BITFLAG(PLAYERFLAG,
-        LOCKCONTROLS,
-        NOCONTROL,
-        NOTIMER
-)
+typedef enum PLAYERFLAG {
+    PLAYERFLAG_NONE = 0,
+    PLAYERFLAG_LOCKCONTROLS = 1 << 0,
+    PLAYERFLAG_NOCONTROL = 1 << 1,
+    PLAYERFLAG_NOTIMER = 1 << 2
+} PLAYERFLAG;
 //PropDef bitflag canonically PROPHID_
-BITFLAG(RUNTIMEBITFLAG,
-        00000001,
-        00000002,
-        REMOVE, /* removes object when set                                         */
-        ISRETICK,
-        TAGGED,
-        THROWING_KNIFE_RELATED,
-        EMBEDDED,
-        HASPROJECTILE, /* this object owns a live Projectile record in obj->projectile   */
-        00000100,
-        BEENOPENED,
-        DESTROYED, /* only set with disabled or destroyed doors                    */
-        00000800,
-        00001000,
-        PADLOCKEDDOOR,
-        ACTIVATED, /* activated                                                    */
-        00008000,
-        00010000,
-        00020000, /* owner 2bit (0-3) used to                                      */
-        00040000, /* attribute kills to players                                    */
-        HASOWNER,
-        00100000,
-        00200000,
-        00400000,
-        00800000,
-        01000000,
-        02000000,
-        04000000,
-        08000000,
-        10000000,
-        20000000,
-        40000000,
-        80000000
-)
+typedef enum RUNTIMEBITFLAG {
+    RUNTIMEBITFLAG_NONE = 0,
+    RUNTIMEBITFLAG_00000001_E = 1 << 0,
+    RUNTIMEBITFLAG_00000002 = 1 << 1,
+    RUNTIMEBITFLAG_REMOVE = 1 << 2,
+    RUNTIMEBITFLAG_ISRETICK = 1 << 3,
+    RUNTIMEBITFLAG_TAGGED = 1 << 4,
+    RUNTIMEBITFLAG_THROWING_KNIFE_RELATED = 1 << 5,
+    RUNTIMEBITFLAG_EMBEDDED = 1 << 6,
+    RUNTIMEBITFLAG_HASPROJECTILE = 1 << 7,
+    RUNTIMEBITFLAG_00000100_E = 1 << 8,
+    RUNTIMEBITFLAG_BEENOPENED = 1 << 9,
+    RUNTIMEBITFLAG_DESTROYED = 1 << 10,
+    RUNTIMEBITFLAG_00000800_E = 1 << 11,
+    RUNTIMEBITFLAG_00001000_E = 1 << 12,
+    RUNTIMEBITFLAG_PADLOCKEDDOOR_E = 1 << 13,
+    RUNTIMEBITFLAG_ACTIVATED = 1 << 14,
+    RUNTIMEBITFLAG_00008000 = 1 << 15,
+    RUNTIMEBITFLAG_00010000 = 1 << 16,
+    RUNTIMEBITFLAG_00020000 = 1 << 17,
+    RUNTIMEBITFLAG_00040000 = 1 << 18,
+    RUNTIMEBITFLAG_HASOWNER_E = 1 << 19,
+    RUNTIMEBITFLAG_00100000 = 1 << 20,
+    RUNTIMEBITFLAG_00200000 = 1 << 21,
+    RUNTIMEBITFLAG_00400000 = 1 << 22,
+    RUNTIMEBITFLAG_00800000 = 1 << 23,
+    RUNTIMEBITFLAG_01000000 = 1 << 24,
+    RUNTIMEBITFLAG_02000000 = 1 << 25,
+    RUNTIMEBITFLAG_04000000 = 1 << 26,
+    RUNTIMEBITFLAG_08000000 = 1 << 27,
+    RUNTIMEBITFLAG_10000000 = 1 << 28,
+    RUNTIMEBITFLAG_20000000 = 1 << 29,
+    RUNTIMEBITFLAG_40000000 = 1 << 30,
+    RUNTIMEBITFLAG_80000000 = 0x80000000
+} RUNTIMEBITFLAG;
 
 #define RUNTIMEBITFLAG_OWNER          0x60000
 #define RUNTIMEBITSHIFT_OWNER         0x11
@@ -710,28 +715,261 @@ COUNT does not cause allocation of storage or change resulting
 //typedef u16 PAD;
 //typedef u16 PAD3D;
 
-typedef enum AI_CMD
-{
-#ifndef _SYNHILITE
-
-// makes enum list
-#    ifdef __sgi
-#        define _AI_CMD(C) CAT(AI_, CMDNAME),
-#        define _AI_DEBUG(C) CAT(AI_, CMDNAME),
-#        define _AI_CMD_POLYMORPH(CMD, A, P, Q, D)
-#        define DEFINE(x)
-#    else
-#        define _AI_CMD(...)   CAT(AI_, CMDNAME),
-#        define _AI_DEBUG(...) CAT(AI_, CMDNAME),
-#        define _AI_CMD_POLYMORPH(...)
-#        define DEFINE(...)
-#    endif
-
-
-#    include "aicommands.def"
-#endif /* !_SYNHILITE */
-
-    AI_CMD_COUNT
+typedef enum AI_CMD {
+    AI_GotoNext = 0,
+    AI_GotoFirst = 1,
+    AI_Label = 2,
+    AI_Yield = 3,
+    AI_EndList = 4,
+    AI_SetChrAiList = 5,
+    AI_SetReturnAiList = 6,
+    AI_Return = 7,
+    AI_Stop = 8,
+    AI_Kneel = 9,
+    AI_PlayAnimation = 10,
+    AI_IFPlayingAnimation = 11,
+    AI_PointAtBond = 12,
+    AI_LookSurprised = 13,
+    AI_TRYSidestepping = 14,
+    AI_TRYSideHopping = 15,
+    AI_TRYSideRunning = 16,
+    AI_TRYFiringWalk = 17,
+    AI_TRYFiringRun = 18,
+    AI_TRYFiringRoll = 19,
+    AI_TRYFireOrAimAtTarget = 20,
+    AI_TRYFireOrAimAtTargetKneel = 21,
+    AI_TRYFireOrAimAtTargetUpdate = 22,
+    AI_TRYFacingTarget = 23,
+    AI_HitChrWithItem = 24,
+    AI_ChrHitChr = 25,
+    AI_TRYThrowingGrenade = 26,
+    AI_TRYDroppingItem = 27,
+    AI_RunToPad = 28,
+    AI_RunToPadPreset = 29,
+    AI_WalkToPad = 30,
+    AI_SprintToPad = 31,
+    AI_StartPatrol = 32,
+    AI_Surrender = 33,
+    AI_RemoveMe = 34,
+    AI_ChrRemoveInstant = 35,
+    AI_TRYTriggeringAlarmAtPad = 36,
+    AI_AlarmOn = 37,
+    AI_AlarmOff = 38,
+    AI_TRYRunFromBond = 39,
+    AI_TRYRunToBond = 40,
+    AI_TRYWalkToBond = 41,
+    AI_TRYSprintToBond = 42,
+    AI_TRYFindCover = 43,
+    AI_TRYRunToChr = 44,
+    AI_TRYWalkToChr = 45,
+    AI_TRYSprintToChr = 46,
+    AI_IFImOnPatrolOrStopped = 47,
+    AI_IFChrDyingOrDead = 48,
+    AI_IFChrDoesNotExist = 49,
+    AI_IFISeeBond = 50,
+    AI_SetNewRandom = 51,
+    AI_IFRandomLessThan = 52,
+    AI_IFRandomGreaterThan = 53,
+    AI_IFICanHearAlarm = 54,
+    AI_IFAlarmIsOn = 55,
+    AI_IFGasIsLeaking = 56,
+    AI_IFIHeardBond = 57,
+    AI_IFISeeSomeoneShot = 58,
+    AI_IFISeeSomeoneDie = 59,
+    AI_IFICouldSeeBond = 60,
+    AI_IFICouldSeeBondsStan = 61,
+    AI_IFIWasShotRecently = 62,
+    AI_IFIHeardBondRecently = 63,
+    AI_IFImInRoomWithChr = 64,
+    AI_IFIveNotBeenSeen = 65,
+    AI_IFImOnScreen = 66,
+    AI_IFMyRoomIsOnScreen = 67,
+    AI_IFRoomWithPadIsOnScreen = 68,
+    AI_IFImTargetedByBond = 69,
+    AI_IFBondMissedMe = 70,
+    AI_IFMyAngleToBondLessThan = 71,
+    AI_IFMyAngleToBondGreaterThan = 72,
+    AI_IFMyAngleFromBondLessThan = 73,
+    AI_IFMyAngleFromBondGreaterThan = 74,
+    AI_IFMyDistanceToBondLessThanDecimeter = 75,
+    AI_IFMyDistanceToBondGreaterThanDecimeter = 76,
+    AI_IFChrDistanceToPadLessThanDecimeter = 77,
+    AI_IFChrDistanceToPadGreaterThanDecimeter = 78,
+    AI_IFMyDistanceToChrLessThanDecimeter = 79,
+    AI_IFMyDistanceToChrGreaterThanDecimeter = 80,
+    AI_TRYSettingMyPresetToChrWithinDistanceDecimeter = 81,
+    AI_IFBondDistanceToPadLessThanDecimeter = 82,
+    AI_IFBondDistanceToPadGreaterThanDecimeter = 83,
+    AI_IFChrInRoomWithPad = 84,
+    AI_IFBondInRoomWithPad = 85,
+    AI_IFBondCollectedObject = 86,
+    AI_IFKeyDropped = 87,
+    AI_IFItemIsAttachedToObject = 88,
+    AI_IFBondHasItemEquipped = 89,
+    AI_IFObjectExists = 90,
+    AI_IFObjectNotDestroyed = 91,
+    AI_IFObjectWasActivated = 92,
+    AI_IFBondUsedGadgetOnObject = 93,
+    AI_ActivateObject = 94,
+    AI_DestroyObject = 95,
+    AI_DropObject = 96,
+    AI_ChrDropAllConcealedItems = 97,
+    AI_ChrDropAllHeldItems = 98,
+    AI_BondCollectObject = 99,
+    AI_ChrEquipObject = 100,
+    AI_MoveObject = 101,
+    AI_DoorOpen = 102,
+    AI_DoorClose = 103,
+    AI_IFDoorStateEqual = 104,
+    AI_IFDoorHasBeenOpenedBefore = 105,
+    AI_DoorSetLock = 106,
+    AI_DoorUnsetLock = 107,
+    AI_IFDoorLockEqual = 108,
+    AI_IFObjectiveNumComplete = 109,
+    AI_TRYUnknown6e = 110,
+    AI_TRYUnknown6f = 111,
+    AI_IFGameDifficultyLessThan = 112,
+    AI_IFGameDifficultyGreaterThan = 113,
+    AI_IFMissionTimeLessThan = 114,
+    AI_IFMissionTimeGreaterThan = 115,
+    AI_IFSystemPowerTimeLessThan = 116,
+    AI_IFSystemPowerTimeGreaterThan = 117,
+    AI_IFLevelIdLessThan = 118,
+    AI_IFLevelIdGreaterThan = 119,
+    AI_IFMyNumArghsLessThan = 120,
+    AI_IFMyNumArghsGreaterThan = 121,
+    AI_IFMyNumCloseArghsLessThan = 122,
+    AI_IFMyNumCloseArghsGreaterThan = 123,
+    AI_IFChrHealthLessThan = 124,
+    AI_IFChrHealthGreaterThan = 125,
+    AI_IFChrWasDamagedSinceLastCheck = 126,
+    AI_IFBondHealthLessThan = 127,
+    AI_IFBondHealthGreaterThan = 128,
+    AI_SetMyMorale = 129,
+    AI_AddToMyMorale = 130,
+    AI_SubtractFromMyMorale = 131,
+    AI_IFMyMoraleLessThan = 132,
+    AI_IFMyMoraleLessThanRandom = 133,
+    AI_SetMyAlertness = 134,
+    AI_AddToMyAlertness = 135,
+    AI_SubtractFromMyAlertness = 136,
+    AI_IFMyAlertnessLessThan = 137,
+    AI_IFMyAlertnessLessThanRandom = 138,
+    AI_SetMyHearingScale = 139,
+    AI_SetMyVisionRange = 140,
+    AI_SetMyGrenadeProbability = 141,
+    AI_SetMyChrNum = 142,
+    AI_SetMyHealthTotal = 143,
+    AI_SetMyArmour = 144,
+    AI_SetMySpeedRating = 145,
+    AI_SetMyArghRating = 146,
+    AI_SetMyAccuracyRating = 147,
+    AI_SetMyFlags2 = 148,
+    AI_UnsetMyFlags2 = 149,
+    AI_IFMyFlags2Has = 150,
+    AI_SetChrBitfield = 151,
+    AI_UnsetChrBitfield = 152,
+    AI_IFChrBitfieldHas = 153,
+    AI_SetObjectiveBitfield = 154,
+    AI_UnsetObjectiveBitfield = 155,
+    AI_IFObjectiveBitfieldHas = 156,
+    AI_SetMychrflags = 157,
+    AI_UnsetMychrflags = 158,
+    AI_IFMychrflagsHas = 159,
+    AI_SetChrchrflags = 160,
+    AI_UnsetChrchrflags = 161,
+    AI_IFChrchrflagsHas = 162,
+    AI_SetObjectFlags = 163,
+    AI_UnsetObjectFlags = 164,
+    AI_IFObjectFlagsHas = 165,
+    AI_SetObjectFlags2 = 166,
+    AI_UnsetObjectFlags2 = 167,
+    AI_IFObjectFlags2Has = 168,
+    AI_SetMyChrPreset = 169,
+    AI_SetChrChrPreset = 170,
+    AI_SetMyPadPreset = 171,
+    AI_SetChrPadPreset = 172,
+    AI_PRINT = 173,
+    AI_MyTimerStart = 174,
+    AI_MyTimerReset = 175,
+    AI_MyTimerPause = 176,
+    AI_MyTimerResume = 177,
+    AI_IFMyTimerIsNotRunning = 178,
+    AI_IFMyTimerLessThanTicks = 179,
+    AI_IFMyTimerGreaterThanTicks = 180,
+    AI_HudCountdownShow = 181,
+    AI_HudCountdownHide = 182,
+    AI_HudCountdownSet = 183,
+    AI_HudCountdownStop = 184,
+    AI_HudCountdownStart = 185,
+    AI_IFHudCountdownIsNotRunning = 186,
+    AI_IFHudCountdownLessThan = 187,
+    AI_IFHudCountdownGreaterThan = 188,
+    AI_TRYSpawningChrAtPad = 189,
+    AI_TRYSpawningChrNextToChr = 190,
+    AI_TRYGiveMeItem = 191,
+    AI_TRYGiveMeHat = 192,
+    AI_TRYCloningChr = 193,
+    AI_TextPrintBottom = 194,
+    AI_TextPrintTop = 195,
+    AI_SfxPlay = 196,
+    AI_SfxEmitFromObject = 197,
+    AI_SfxEmitFromPad = 198,
+    AI_SfxSetChannelVolume = 199,
+    AI_SfxFadeChannelVolume = 200,
+    AI_SfxStopChannel = 201,
+    AI_IFSfxChannelVolumeLessThan = 202,
+    AI_VehicleStartPath = 203,
+    AI_VehicleSpeed = 204,
+    AI_AircraftRotorSpeed = 205,
+    AI_IFCameraIsInIntro = 206,
+    AI_IFCameraIsInBondSwirl = 207,
+    AI_TvChangeScreenBank = 208,
+    AI_IFBondInTank = 209,
+    AI_EndLevel = 210,
+    AI_CameraReturnToBond = 211,
+    AI_CameraLookAtBondFromPad = 212,
+    AI_CameraSwitch = 213,
+    AI_IFBondYPosLessThan = 214,
+    AI_BondDisableControl = 215,
+    AI_BondEnableControl = 216,
+    AI_TRYTeleportingChrToPad = 217,
+    AI_ScreenFadeToBlack = 218,
+    AI_ScreenFadeFromBlack = 219,
+    AI_IFScreenFadeCompleted = 220,
+    AI_HideAllChrs = 221,
+    AI_ShowAllChrs = 222,
+    AI_DoorOpenInstant = 223,
+    AI_ChrRemoveItemInHand = 224,
+    AI_IfNumberOfActivePlayersLessThan = 225,
+    AI_IFBondItemTotalAmmoLessThan = 226,
+    AI_BondEquipItem = 227,
+    AI_BondEquipItemCinema = 228,
+    AI_BondSetLockedVelocity = 229,
+    AI_IFObjectInRoomWithPad = 230,
+    AI_IFImFiringAndLockedForward = 231,
+    AI_IFImFiring = 232,
+    AI_SwitchSky = 233,
+    AI_TriggerFadeAndExitLevelOnButtonPress = 234,
+    AI_IFBondIsDead = 235,
+    AI_BondDisableDamageAndPickups = 236,
+    AI_BondHideWeapons = 237,
+    AI_CameraOrbitPad = 238,
+    AI_CreditsRoll = 239,
+    AI_IFCreditsHasCompleted = 240,
+    AI_IFObjectiveAllCompleted = 241,
+    AI_IFFolderActorIsEqual = 242,
+    AI_IFBondDamageAndPickupsDisabled = 243,
+    AI_MusicPlaySlot = 244,
+    AI_MusicStopSlot = 245,
+    AI_TriggerExplosionsAroundBond = 246,
+    AI_IFKilledCiviliansGreaterThan = 247,
+    AI_IFChrWasShotSinceLastCheck = 248,
+    AI_BondKilledInAction = 249,
+    AI_RaiseArms = 250,
+    AI_GasLeakAndFadeFog = 251,
+    AI_ObjectRocketLaunch = 252,
+    AI_CMD_COUNT = 253
 } AI_CMD;
 
 // Number of bytes for AI cmds, GE 1, PD 2
@@ -4711,7 +4949,7 @@ typedef enum PROJECTILES
  * @param NUMJOINTS: (Optional Integer) Number of Joints
  */
 #define New_ModelSkeleton(NAME, SKELSIZE, HASNAMES, NUMJOINTS) \
-    ModelSkeleton SKELETON(##NAME##) = {                   \
+    ModelSkeleton SKELETON(NAME) = {                   \
     IF_ELSE(IS_EMPTY(NUMJOINTS))                           \
     (                                                      \
         sizeof(JOINTLIST(NAME))/sizeof(ModelJoint)         \
@@ -4720,7 +4958,7 @@ typedef enum PROJECTILES
         NUMJOINTS                                          \
     ),                                                     \
     0,                                                     \
-    JOINTLIST(##NAME##),                                   \
+    JOINTLIST(NAME),                                   \
     SKELSIZE,                                              \
     0                                                      \
     IF(AND(DEFINED(DEBUG), BOOL(HASNAMES)))                \
@@ -4729,7 +4967,7 @@ typedef enum PROJECTILES
     )                                                      \
     };
 
-#define MODELSKELETON(NAME, NUMJOINTS, SKELSIZE) ModelSkeleton SKELETON( ## NAME ## ) = {NUMJOINTS, 0, JOINTLIST( ## NAME ## ), SKELSIZE, 0};
+#define MODELSKELETON(NAME, NUMJOINTS, SKELSIZE) ModelSkeleton SKELETON(NAME) = {NUMJOINTS, 0, JOINTLIST(NAME), SKELSIZE, 0};
 
 
 /**
@@ -4809,28 +5047,19 @@ typedef enum PROJECTILES
 #endif
 
 #define CHRFILERECORD(NAME, SCALE, OFFSET, HASHEAD, ISMALE) \
-    {&##NAME##_header, STR(C##NAME##Z), SCALE, OFFSET, HASHEAD, ISMALE},
+    {&NAME##_header, STR(C##NAME##Z), SCALE, OFFSET, HASHEAD, ISMALE},
 
-#define GUNSTATS(NAME) & ## NAME ## _stats
+#define GUNSTATS(NAME) &NAME ## _stats
 #define GUNFILERECORD(NAME, NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ) \
-    { & ## NAME ## _header,STR(G## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
+    { &NAME ## _header,STR(G## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
 #define SUIT_LFRECORD(NAME, NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ) \
-    { & ## NAME ## _header,STR(C## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
+    { &NAME ## _header,STR(C## NAME ##Z), NOMODEL, STATS, UPPERTEXTID, LOWERTEXTID, POSX, POSY, POSZ, XROT, YROT, WOCTEXT, EQUIPTEXT, EQUIPX, EQUIPY, EQUIPZ},
 /**
  * Define a New Item Record
  * @param NAME:  Name of Model
  * @param SCALE: (Optional float) Scale of Model
  */
-#define PROPFILERECORD(NAME, SCALE)        \
-    {&NAME ## _header, STR(P ## NAME ##Z), \
-    IF_ELSE(IS_EMPTY(SCALE))               \
-    (                                      \
-        0.1                                \
-    )                                      \
-    (                                      \
-        SCALE                              \
-    )                                      \
-},
+#define PROPFILERECORD(NAME, SCALE) {&NAME ## _header, STR(P ## NAME ##Z), SCALE},
 
 #define forever for (;;)
 

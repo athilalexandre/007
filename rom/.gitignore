@@ -1,0 +1,4 @@
+# Ignore all ROM images and dumps unconditionally
+*
+!.gitignore
+!README.md

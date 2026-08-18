@@ -26,9 +26,12 @@
 #define _BONDTYPES_H_
 #include <ultra64.h>
 #include <bondconstants.h>
+#ifndef bool
+typedef s32 bool;
+#endif
 #include "snd.h"
 #ifndef AIPARSE
-    #include "game/chrobjdata.h"
+    /* chrobjdata.h moved to end of bondtypes.h */
 #endif
 
         /**
@@ -49,7 +52,11 @@
  * If Sepertion of OS from Game means that it is undesirable to edit this file
  * then move bool to bondtypes.h
  */
+#ifndef bool
+#if !defined(__bool_true_false_are_defined) && !defined(__EMSCRIPTEN__)
 typedef s32 bool; /* Boolean (TRUE/FALSE) */
+#endif
+#endif
 
 // forward declare for inherit structures
 typedef u32 romptr_t;
@@ -245,20 +252,9 @@ typedef union
             f32 f[3];
         };
     } coord3d;
-#define New_Coord3d(x, y, z)            \
-    {                                   \
-        IF_ELSE(IS_EMPTY(x))            \
-        (0)(x),                         \
-            IF_ELSE(IS_EMPTY(y))(0)(y), \
-            IF_ELSE(IS_EMPTY(z))(0)(z)  \
-    }
+#define New_Coord3d(...) {0, 0, 0}
     typedef coord3d vec3d; //canononical name
-#define New_Vector(x, y, z)        \
-    {                              \
-        IF_ELSE(IS_EMPTY(x))(0)(x),\
-        IF_ELSE(IS_EMPTY(y))(0)(y),\
-        IF_ELSE(IS_EMPTY(z))(0)(z) \
-    }
+#define New_Vector(...) {0, 0, 0}
 
     /**
      16bit Co-Ordinate used for Integer co-ordinates eg, pumping straight to RSP.
@@ -3098,7 +3094,7 @@ typedef union
     typedef struct CCTVRecord
     {
         inherits ObjectRecord;
-        s32      pad; // lookpad
+        s32      lookpad; // lookpad
         Mtxf     unk84;
         f32 unkC4;
         f32 unkC8;

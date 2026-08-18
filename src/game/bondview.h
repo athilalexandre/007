@@ -2,6 +2,7 @@
 #define _BOND_H_
 
 #include <ultra64.h>
+#include <bondconstants.h>
 #include <bondtypes.h>
 #include "chr.h"
 #include "matrixmath.h"
