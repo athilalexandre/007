@@ -16,18 +16,17 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-    // Set CORS and Cross-Origin isolation headers for SharedArrayBuffer / WASM
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    const url = new URL(req.url, http://localhost:\);
+    const url = new URL(req.url, 'http://localhost:' + PORT);
     let reqPath = decodeURIComponent(url.pathname);
 
-    // Block any attempt to access /rom/ or retail assets
-    if (reqPath.startsWith('/rom') || reqPath.includes('..')) {
-        res.writeHead(403, { 'Content-Type': 'text/plain' });
-        res.end('Access Forbidden');
+    // Block any attempt to access /assets/ramrom/ or /rom/ or directory traversal
+    if (reqPath.startsWith('/assets/ramrom') || reqPath.startsWith('/rom') || reqPath.includes('..')) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('403 Forbidden: Direct ROM access is strictly blocked.');
         return;
     }
 
@@ -44,7 +43,7 @@ const server = http.createServer((req, res) => {
 
     fs.stat(filePath, (err, stats) => {
         if (err || !stats.isFile()) {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end('404 Not Found');
             return;
         }
@@ -64,5 +63,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-    console.log(GoldenEye 007 Authentic Engine Test Server running at http://localhost:\);
+    console.log('GoldenEye 007 Authentic Engine Test Server running at http://localhost:' + PORT);
 });

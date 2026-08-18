@@ -252,8 +252,13 @@ void bossInitMainthreadData(void)
         g_CurentMMallocValue = (s32) (strtol((char *)tokenFind(1, "-m"), 0, 0) << 0xa);
     }
 
+#ifdef TARGET_WEB
+    start = (u32)&_bssSegmentEnd[0];
+    mempCheckMemflagTokens(start, 16 * 1024 * 1024);
+#else
     start = (PHYS_TO_K0(osVirtualToPhysical(&_bssSegmentEnd)));
     mempCheckMemflagTokens(start, ((u32)tlbmanageGetTlbAllocatedBlock() - (u32)start));
+#endif
     mempResetBank(MEMPOOL_PERMANENT);
     langInit();
     lvInit();

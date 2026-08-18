@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldenEye 007 - Authentic Decompiled Engine WebAssembly Test</title>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --panel-bg: rgba(18, 24, 38, 0.95);
+            --border-color: #2a364f;
+            --accent-gold: #d4af37;
+            --accent-blue: #3b82f6;
+            --text-main: #e2e8f0;
+            --text-dim: #94a3b8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            color: var(--accent-gold);
+            font-size: 26px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        header p {
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 660px 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        @media (max-width: 1050px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .screen-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .canvas-container {
+            width: 640px;
+            height: 480px;
+            background: #000;
+            border: 2px solid #1a2234;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .drop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 14, 20, 0.94);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .drop-overlay:hover {
+            background: rgba(18, 24, 38, 0.96);
+        }
+
+        .drop-overlay.hidden {
+            display: none;
+        }
+
+        .drop-icon {
+            font-size: 44px;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+        }
+
+        .btn-upload {
+            background: var(--accent-gold);
+            color: #000;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            margin-top: 12px;
+            font-size: 13px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-upload:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .info-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+
+        .info-card h2 {
+            font-size: 15px;
+            color: var(--accent-gold);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .telemetry-row:last-child {
+            border-bottom: none;
+        }
+
+        .telemetry-label {
+            color: var(--text-dim);
+        }
+
+        .telemetry-val {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            color: var(--text-main);
+        }
+
+        .status-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-ok {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .status-idle {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-dim);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        .status-err {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .status-warn {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .error-banner {
+            display: none;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--error);
+            color: #fca5a5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .error-banner.visible {
+            display: block;
+        }
+
+        .logs-box {
+            background: #06080c;
+            border: 1px solid #1a2234;
+            border-radius: 6px;
+            padding: 8px 10px;
+            height: 120px;
+            overflow-y: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+        }
+
+        .log-ok { color: var(--success); }
+        .log-err { color: var(--error); }
+        .log-info { color: var(--accent-blue); }
+        .log-warn { color: var(--warning); }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .key-badge {
+            background: #1a2234;
+            color: var(--text-main);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GoldenEye 007 (N64) Web Port</h1>
+        <p>Authentic Decompiled C Engine running via WebAssembly &middot; Native 320&times;240 RGBA5551</p>
+    </header>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="main-layout">
+        <div class="screen-card">
+            <div class="canvas-container" id="canvas-container">
+                <canvas id="game-canvas" width="320" height="240"></canvas>
+                <div class="drop-overlay" id="drop-overlay">
+                    <div class="drop-icon">&#9654;</div>
+                    <h3>Provide GoldenEye 007 USA ROM</h3>
+                    <p style="margin-top: 4px; font-size: 13px; color: #94a3b8;">
+                        Drag & Drop <code>.z64</code>, <code>.v64</code>, or <code>.n64</code> file here
+                    </p>
+                    <input type="file" id="rom-file-input" accept=".z64,.v64,.n64,.rom" style="display: none;">
+                    <button class="btn-upload" type="button" onclick="document.getElementById('rom-file-input').click()">Select ROM File</button>
+                </div>
+            </div>
+            <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-dim);">
+                <span>Rasterizer: GBI Software Interp (320&times;240)</span>
+                <span id="fps-counter">0 FPS &middot; 0 Ticks</span>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="info-card">
+                <h2>WASM & Engine State <span class="status-tag status-idle" id="wasm-status-tag">Loading</span></h2>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Decompilation Baseline</span>
+                    <span class="telemetry-val">c4356466 (Clean Ancestor)</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Compiler Toolchain</span>
+                    <span class="telemetry-val">Emscripten 6.0.7 / Clang 23</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Engine Lifecycle</span>
+                    <span class="telemetry-val" id="engine-lifecycle">Uninitialized</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Current Stage</span>
+                    <span class="telemetry-val" id="current-stage">None</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Engine Tick Count</span>
+                    <span class="telemetry-val" id="engine-ticks">0</span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h2>ROM & DMA Telemetry <span class="status-tag status-idle" id="rom-status-tag">No ROM</span></h2>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Detected Format</span>
+                    <span class="telemetry-val" id="rom-format">None</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Region & Revision</span>
+                    <span class="telemetry-val" id="rom-region">None</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">ROM Size</span>
+                    <span class="telemetry-val" id="rom-size">0 bytes</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Canonical SHA-1</span>
+                    <span class="telemetry-val" id="rom-sha1">None</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">DMA Transfers</span>
+                    <span class="telemetry-val" id="dma-transfers">0 reads (0 bytes)</span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h2>GBI Display List Telemetry</h2>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Commands Processed</span>
+                    <span class="telemetry-val" id="gbi-commands">0</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Triangles Rendered</span>
+                    <span class="telemetry-val" id="gbi-triangles">0</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Vertices Transformed</span>
+                    <span class="telemetry-val" id="gbi-vertices">0</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Textures Loaded</span>
+                    <span class="telemetry-val" id="gbi-textures">0</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Unsupported Opcodes</span>
+                    <span class="telemetry-val" id="gbi-unsupported">0</span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h2>Keyboard Controls</h2>
+                <div class="controls-grid">
+                    <div><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> : Stick / Nav</div>
+                    <div><span class="key-badge">Enter</span> : Start Button</div>
+                    <div><span class="key-badge">J</span> : A Button (Select)</div>
+                    <div><span class="key-badge">K</span> : B Button (Back)</div>
+                    <div><span class="key-badge">Space</span> : Z Trigger (Shoot)</div>
+                    <div><span class="key-badge">Q</span> / <span class="key-badge">E</span> : L / R Triggers</div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h2>System & Engine Logs</h2>
+                <div class="logs-box" id="logs-box">
+                    <div class="log-entry log-info">[System] Initializing GoldenEye 007 WebAssembly runtime...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="goldeneye007.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

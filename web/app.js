@@ -3,11 +3,12 @@
 // ==============================================================================
 
 const EXPECTED_SHA1 = 'abe01e4aeb033b6c0836819f549c791b26cfde83';
-const RETAIL_SIZE = 12582912;
+const EXPECTED_GAME_ID = 'NGEE';
+const EXPECTED_SIZE = 12582912; // 12 MB
 
 let g_Module = null;
 let g_IsRunning = false;
-let g_FrameCount = 0;
+let g_AnimFrameId = null;
 let g_LastFpsTime = performance.now();
 let g_FpsFrames = 0;
 
@@ -22,32 +23,44 @@ function log(msg, type = 'info') {
     box.scrollTop = box.scrollHeight;
 }
 
-// Convert bytes to hex SHA-1 using SubtleCrypto
+function showError(msg) {
+    const banner = document.getElementById('error-banner');
+    if (banner) {
+        banner.textContent = msg;
+        banner.className = 'error-banner visible';
+    }
+    log(msg, 'err');
+}
+
+function clearError() {
+    const banner = document.getElementById('error-banner');
+    if (banner) {
+        banner.textContent = '';
+        banner.className = 'error-banner';
+    }
+}
+
 async function computeSHA1(buffer) {
     const hashBuffer = await crypto.subtle.digest('SHA-1', buffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Normalize ROM formats (.z64 big endian, .v64 byteswapped, .n64 little endian) to Big Endian
 function normalizeRom(buffer) {
     const view = new DataView(buffer);
     const magic = view.getUint32(0, false);
     const u8 = new Uint8Array(buffer);
 
     if (magic === 0x80371240) {
-        log('ROM format identified: .z64 (Native Big-Endian)', 'ok');
-        return u8;
+        return { data: u8, format: '.z64 (Native Big-Endian)', magic: '0x80371240', ok: true };
     } else if (magic === 0x37804012) {
-        log('ROM format identified: .v64 (Byte-swapped BADC) -> Normalizing to Big-Endian', 'info');
         const out = new Uint8Array(u8.length);
         for (let i = 0; i < u8.length; i += 2) {
             out[i] = u8[i + 1];
             out[i + 1] = u8[i];
         }
-        return out;
+        return { data: out, format: '.v64 (Byte-swapped BADC)', magic: '0x37804012', ok: true };
     } else if (magic === 0x40123780) {
-        log('ROM format identified: .n64 (Little-Endian DCBA) -> Normalizing to Big-Endian', 'info');
         const out = new Uint8Array(u8.length);
         for (let i = 0; i < u8.length; i += 4) {
             out[i] = u8[i + 3];
@@ -55,88 +68,126 @@ function normalizeRom(buffer) {
             out[i + 2] = u8[i + 1];
             out[i + 3] = u8[i];
         }
-        return out;
+        return { data: out, format: '.n64 (Little-Endian DCBA)', magic: '0x40123780', ok: true };
     } else {
-        log('Warning: Unrecognized ROM magic bytes (' + magic.toString(16) + '). Attempting direct load.', 'err');
-        return u8;
+        return { data: null, format: 'Unknown', magic: '0x' + magic.toString(16).padStart(8, '0'), ok: false };
     }
 }
 
 async function handleRomFile(file) {
-    log(`Loading ROM file: ${file.name} (${(file.size / (1024*1024)).toFixed(2)} MB)...`, 'info');
-    document.getElementById('rom-ingestion-status').textContent = 'Reading file...';
-
-    const arrayBuffer = await file.arrayBuffer();
-    const normalizedBytes = normalizeRom(arrayBuffer);
-
-    if (normalizedBytes.length < RETAIL_SIZE) {
-        log(`Error: File is smaller than retail GoldenEye 007 USA ROM (${normalizedBytes.length} < ${RETAIL_SIZE})`, 'err');
-        document.getElementById('rom-status-tag').className = 'status-tag status-err';
-        document.getElementById('rom-status-tag').textContent = 'Invalid Size';
-        document.getElementById('rom-ingestion-status').textContent = 'Size mismatch';
+    clearError();
+    if (!g_Module) {
+        showError('Error: WebAssembly module is still loading.');
         return;
     }
 
-    const sha1 = await computeSHA1(normalizedBytes.buffer);
-    log(`Calculated SHA-1: ${sha1}`, sha1 === EXPECTED_SHA1 ? 'ok' : 'info');
+    log(`Reading ROM file: ${file.name} (${file.size} bytes)...`, 'info');
+    document.getElementById('rom-size').textContent = `${file.size.toLocaleString()} bytes`;
 
-    if (sha1 === EXPECTED_SHA1) {
-        log('Verified authentic GoldenEye 007 USA Retail ROM.', 'ok');
-    } else {
-        log(`Notice: ROM SHA-1 differs from retail USA baseline (${EXPECTED_SHA1}).`, 'info');
+    const arrayBuffer = await file.arrayBuffer();
+
+    if (arrayBuffer.byteLength < EXPECTED_SIZE) {
+        showError(`Invalid ROM Size: ${arrayBuffer.byteLength} bytes (Expected: ${EXPECTED_SIZE} bytes for retail USA ROM).`);
+        document.getElementById('rom-status-tag').className = 'status-tag status-err';
+        document.getElementById('rom-status-tag').textContent = 'Invalid Size';
+        return;
     }
 
-    // Allocate buffer in WASM memory and copy ROM
-    const romSize = normalizedBytes.length;
-    const ptr = g_Module._malloc(romSize);
-    g_Module.HEAPU8.set(normalizedBytes, ptr);
+    const norm = normalizeRom(arrayBuffer);
+    if (!norm.ok) {
+        showError(`Unknown ROM magic bytes ${norm.magic}. Expected 0x80371240 (.z64), 0x37804012 (.v64), or 0x40123780 (.n64).`);
+        document.getElementById('rom-status-tag').className = 'status-tag status-err';
+        document.getElementById('rom-status-tag').textContent = 'Bad Magic';
+        return;
+    }
 
-    log('Ingesting ROM into Web Libultra PI bus...', 'info');
+    document.getElementById('rom-format').textContent = norm.format;
+    log(`Identified format: ${norm.format}`, 'ok');
+
+    const u8 = norm.data;
+    let gameId = '';
+    for (let i = 0x3B; i <= 0x3E; i++) {
+        gameId += String.fromCharCode(u8[i]);
+    }
+    const version = u8[0x3F];
+    document.getElementById('rom-region').textContent = `${gameId} (Revision ${version})`;
+
+    if (gameId !== EXPECTED_GAME_ID) {
+        showError('ROM region mismatch. This build currently requires GoldenEye 007 NTSC-U/USA (NGEE). Players in a future online lobby must use the same supported region and revision.');
+        document.getElementById('rom-status-tag').className = 'status-tag status-err';
+        document.getElementById('rom-status-tag').textContent = 'Bad Region';
+        return;
+    }
+
+    const sha1 = await computeSHA1(u8.buffer);
+    document.getElementById('rom-sha1').textContent = sha1;
+    log(`Calculated canonical SHA-1: ${sha1}`, 'info');
+
+    if (sha1 !== EXPECTED_SHA1) {
+        showError(`Unsupported ROM Checksum: ${sha1} (Expected canonical USA: ${EXPECTED_SHA1}). Engine will not mount modified or unverified ROM.`);
+        document.getElementById('rom-status-tag').className = 'status-tag status-err';
+        document.getElementById('rom-status-tag').textContent = 'Bad Hash';
+        return;
+    }
+
+    log('ROM verified: GoldenEye 007 USA (NTSC-U). Ingesting into WebAssembly memory...', 'ok');
+
+    // Ingest into WASM
+    const romSize = u8.length;
+    const ptr = g_Module._malloc(romSize);
+    g_Module.HEAPU8.set(u8, ptr);
     g_Module._hal_os_set_rom_data(ptr, romSize);
     g_Module._free(ptr);
 
     const romStatus = g_Module._hal_os_get_rom_status();
     if (romStatus === 1) {
-        log('ROM mounted successfully. Initializing GoldenEye C decompilation engine...', 'ok');
         document.getElementById('rom-status-tag').className = 'status-tag status-ok';
         document.getElementById('rom-status-tag').textContent = 'Mounted';
-        document.getElementById('rom-ingestion-status').textContent = '12.0 MB Mounted';
         document.getElementById('drop-overlay').classList.add('hidden');
 
         startEngine();
     } else {
-        log('Engine rejected ROM layout validation.', 'err');
+        showError('Engine rejected ROM data structure.');
         document.getElementById('rom-status-tag').className = 'status-tag status-err';
-        document.getElementById('rom-status-tag').textContent = 'Rejected';
-        document.getElementById('rom-ingestion-status').textContent = 'Layout Invalid';
+        document.getElementById('rom-status-tag').textContent = 'Mount Failed';
     }
 }
 
 function startEngine() {
-    log('Calling _hal_engine_init() -> authentic bossInitMainthreadData()...', 'info');
-    const initRes = g_Module._hal_engine_init();
-    if (initRes !== 0) {
-        log(`Engine initialization failed with code: ${initRes}`, 'err');
-        document.getElementById('engine-lifecycle').textContent = 'Init Failed';
+    if (g_IsRunning) {
+        log('Engine already running.', 'warn');
         return;
     }
 
-    log('Authentic decompiled engine initialized! Starting frame loop.', 'ok');
+    log('Initializing GoldenEye 007 decompilation engine (_hal_engine_init)...', 'info');
+    const res = g_Module._hal_engine_init();
+    if (res !== 0 && res !== 1) {
+        showError(`Engine initialization failed with code: ${res}`);
+        document.getElementById('engine-lifecycle').textContent = `Failed (${res})`;
+        document.getElementById('wasm-status-tag').className = 'status-tag status-err';
+        return;
+    }
+
     document.getElementById('engine-lifecycle').textContent = 'Running';
+    document.getElementById('current-stage').textContent = 'TITLE (0x5A)';
+    document.getElementById('wasm-status-tag').className = 'status-tag status-ok';
+    document.getElementById('wasm-status-tag').textContent = 'Active';
+
+    log('Authentic decompiled engine initialized! Starting display list render loop.', 'ok');
     g_IsRunning = true;
 
-    requestAnimationFrame(renderLoop);
+    if (g_AnimFrameId) cancelAnimationFrame(g_AnimFrameId);
+    g_AnimFrameId = requestAnimationFrame(renderLoop);
 }
 
 function renderLoop() {
     if (!g_IsRunning) return;
 
-    // Step the authentic engine frame loop
+    // Step authentic engine frame
     g_Module._hal_engine_step();
-    g_FrameCount++;
     g_FpsFrames++;
 
-    // Present authentic 320x240 RGBA5551 framebuffer to canvas
+    // Present 320x240 RGBA5551 framebuffer to canvas
     const fbPtr = g_Module._hal_gfx_get_framebuffer();
     if (fbPtr) {
         const canvas = document.getElementById('game-canvas');
@@ -157,18 +208,43 @@ function renderLoop() {
     }
 
     // Telemetry updates
+    const ticks = g_Module._hal_engine_get_frame_count ? g_Module._hal_engine_get_frame_count() : 0;
+    const stage = g_Module._hal_engine_get_stage_num ? g_Module._hal_engine_get_stage_num() : 90;
+    document.getElementById('engine-ticks').textContent = ticks;
+    document.getElementById('current-stage').textContent = stage === 90 ? 'TITLE (0x5A)' : `Stage ${stage}`;
+
+    const dmaCount = g_Module._hal_os_get_dma_transfers ? g_Module._hal_os_get_dma_transfers() : 0;
+    const dmaBytes = g_Module._hal_os_get_dma_bytes ? g_Module._hal_os_get_dma_bytes() : 0;
+    document.getElementById('dma-transfers').textContent = `${dmaCount.toLocaleString()} reads (${(dmaBytes / 1024).toFixed(1)} KB)`;
+
+    // GBI Telemetry
+    if (g_Module._hal_gfx_get_telemetry_json) {
+        const jsonPtr = g_Module._malloc(256);
+        g_Module._hal_gfx_get_telemetry_json(jsonPtr, 256);
+        const jsonStr = g_Module.UTF8ToString(jsonPtr);
+        g_Module._free(jsonPtr);
+        try {
+            const gbi = JSON.parse(jsonStr);
+            document.getElementById('gbi-commands').textContent = gbi.commands.toLocaleString();
+            document.getElementById('gbi-triangles').textContent = gbi.triangles.toLocaleString();
+            document.getElementById('gbi-vertices').textContent = gbi.vertices.toLocaleString();
+            document.getElementById('gbi-textures').textContent = gbi.textures.toLocaleString();
+            document.getElementById('gbi-unsupported').textContent = gbi.unsupported.toLocaleString();
+        } catch (e) {}
+    }
+
     const now = performance.now();
     if (now - g_LastFpsTime >= 1000) {
         const fps = Math.round((g_FpsFrames * 1000) / (now - g_LastFpsTime));
-        document.getElementById('fps-counter').textContent = `${fps} FPS (Frame: ${g_FrameCount})`;
+        document.getElementById('fps-counter').textContent = `${fps} FPS \u00B7 ${ticks} Ticks`;
         g_FpsFrames = 0;
         g_LastFpsTime = now;
     }
 
-    requestAnimationFrame(renderLoop);
+    g_AnimFrameId = requestAnimationFrame(renderLoop);
 }
 
-// Input handling
+// Controller Button Mappings (N64 Controller)
 const KEY_MAP = {
     'KeyW': 0x0800, // Up
     'KeyS': 0x0400, // Down
@@ -178,29 +254,25 @@ const KEY_MAP = {
     'KeyJ': 0x8000, // A
     'KeyK': 0x4000, // B
     'Space': 0x2000, // Z
-    'KeyI': 0x0008, // C-Up
-    'KeyK': 0x0004, // C-Down
-    'KeyJ': 0x0002, // C-Left
-    'KeyL': 0x0001, // C-Right
     'KeyQ': 0x0020, // L
     'KeyE': 0x0010  // R
 };
 
-let g_CurrentButtons = 0;
+let g_Buttons = 0;
 window.addEventListener('keydown', (e) => {
     if (KEY_MAP[e.code]) {
-        g_CurrentButtons |= KEY_MAP[e.code];
+        g_Buttons |= KEY_MAP[e.code];
         if (g_Module && g_Module._hal_input_set_buttons) {
-            g_Module._hal_input_set_buttons(g_CurrentButtons, 0, 0);
+            g_Module._hal_input_set_buttons(g_Buttons, 0, 0);
         }
     }
 });
 
 window.addEventListener('keyup', (e) => {
     if (KEY_MAP[e.code]) {
-        g_CurrentButtons &= ~KEY_MAP[e.code];
+        g_Buttons &= ~KEY_MAP[e.code];
         if (g_Module && g_Module._hal_input_set_buttons) {
-            g_Module._hal_input_set_buttons(g_CurrentButtons, 0, 0);
+            g_Module._hal_input_set_buttons(g_Buttons, 0, 0);
         }
     }
 });
@@ -231,11 +303,11 @@ dropOverlay.addEventListener('drop', (e) => {
 // Initialize Emscripten Module
 GoldenEyeModule().then((mod) => {
     g_Module = mod;
-    log('WebAssembly binary loaded and instantiated successfully.', 'ok');
+    log('WebAssembly binary loaded and initialized successfully.', 'ok');
     document.getElementById('wasm-status-tag').className = 'status-tag status-ok';
     document.getElementById('wasm-status-tag').textContent = 'Ready';
 }).catch((err) => {
-    log('Failed to instantiate WebAssembly module: ' + err, 'err');
+    showError('Failed to instantiate WebAssembly module: ' + err);
     document.getElementById('wasm-status-tag').className = 'status-tag status-err';
     document.getElementById('wasm-status-tag').textContent = 'Error';
 });

@@ -1,23 +1,14 @@
 #include <ultra64.h>
-#include "chrobjdata.h"
-#include "image.h"
-#include "math_asinfacosf.h"
-#include "math_ceil.h"
-#include "math_floor.h"
-#include "math_unk_05A9E0.h"
-#include "model.h"
-#include "ob.h"
+#include <bondgame.h>
 #include "objecthandler.h"
-#include "quaternion.h"
-#include "tex.h"
+#include <tex.h>
+#include <model.h>
+#include <memp.h>
+#include <deb.h>
+#include <bondconstants.h>
+#include "ob.h"
 
 
-/***
- * Perfect Dark:
- * void modeldef0f1a7560(struct modeldef *modeldef, u16 filenum, u32 arg2, struct modeldef *modeldef2, struct texpool *texpool, bool arg5)
- * 
- * NTSC address 0x7F0762E0.
-*/
 void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct texpool *buffer)
 {
     ModelNode *node;
@@ -38,6 +29,11 @@ void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct tex
     pcremaining = get_pc_remaining_buffer_for_index(filenum);
     node = 0;
     modelIterateDisplayLists(objheader, &node, &gdl);
+#ifdef TARGET_WEB
+    if ((uintptr_t)gdl > 0x01000000 && ((uintptr_t)gdl & 0xFF) == 0x05) {
+        gdl = (Gfx *)__builtin_bswap32((uintptr_t)gdl);
+    }
+#endif
 
     if (gdl != 0)
     {
@@ -59,6 +55,11 @@ void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct tex
                 curnode = node;
                 curgdl = gdl;
                 modelIterateDisplayLists(objheader, &node, &gdl);
+#ifdef TARGET_WEB
+                if ((uintptr_t)gdl > 0x01000000 && ((uintptr_t)gdl & 0xFF) == 0x05) {
+                    gdl = (Gfx *)__builtin_bswap32((uintptr_t)gdl);
+                }
+#endif
                 
                 if (gdl != 0)
                 {
@@ -83,9 +84,6 @@ void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct tex
 }
 
 
-/***
- * NTSC addres 0x7F0764A4.
-*/
 void load_object_fill_header(struct ModelFileHeader *objheader, u8 *name, u8* dst, s32 size, struct texpool * buffer)
 {
     void *filedata;
@@ -110,23 +108,14 @@ void load_object_fill_header(struct ModelFileHeader *objheader, u8 *name, u8* ds
     sub_GAME_7F0762E0(objheader, name, dst, buffer);
 }
 
-
-
-
 void fileLoad(struct ModelFileHeader *header,char *name)
 {
    load_object_fill_header(header,name,0,0,0);
    return;
 }
 
-
 void load_object_into_memory_unused_maybe(struct ModelFileHeader *header,int *recallstring,int *targetloc,int sizeleft)
 {
    load_object_fill_header(header,recallstring,targetloc,sizeleft,0);
    return;
 }
-
-
-
-
-

@@ -1190,7 +1190,7 @@ f32 bondinvGet45AngleForIndex(int index)
     return get_45_degree_angle_0(bondinvGetTextbyInvIndex(index));
 }
 
-int bondinvGetHoffsetForIndex(int index)
+f32 bondinvGetHoffsetForIndex(int index)
 {
     return get_horizontal_offset_on_solo_watch_menu_for_item(bondinvGetTextbyInvIndex(index));
 }
@@ -1200,7 +1200,7 @@ int bondinvGetVoffsetForIndex(int index)
     return get_vertical_offset_on_solo_watch_menu_for_item(bondinvGetTextbyInvIndex(index));
 }
 
-int bondinvGetDepthForIndex(int index)
+f32 bondinvGetDepthForIndex(int index)
 {
     return get_depth_offset_solo_watch_menu_inventory_page_for_item(bondinvGetTextbyInvIndex(index));
 }
@@ -1340,7 +1340,7 @@ int bondinvGetHposWatchForIndex(int index)
     return get_lateral_position_solo_watch_menu_main_page_for_item(bondinvGetTextbyInvIndex(index));
 }
 
-int bondinvGetDepthWatchForIndex(int index)
+f32 bondinvGetDepthWatchForIndex(int index)
 {
     return get_depth_on_solo_watch_menu_page_for_item(bondinvGetTextbyInvIndex(index));
 }

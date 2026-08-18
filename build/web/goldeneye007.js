@@ -1151,6 +1151,7 @@ async function createWasm() {
   /** @type {!Uint16Array} */
   var HEAPU16;
 
+
 // End JS library code
 
 // include: postlibrary.js
@@ -1205,6 +1206,7 @@ Module['FS_createPreloadedFile'] = FS.createPreloadedFile;
 // Begin runtime exports
   Module['ccall'] = ccall;
   Module['cwrap'] = cwrap;
+  Module['UTF8ToString'] = UTF8ToString;
   var missingLibrarySymbols = [
   'writeI53ToI64',
   'writeI53ToI64Clamped',
@@ -1429,7 +1431,6 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'PATH_FS',
   'UTF8Decoder',
   'UTF8ArrayToString',
-  'UTF8ToString',
   'stringToUTF8Array',
   'stringToUTF8',
   'lengthBytesUTF8',
@@ -1630,21 +1631,26 @@ function checkIncomingModuleAPI() {
 }
 
 // Imports from the Wasm binary.
+var _malloc = Module['_malloc'] = makeInvalidEarlyAccess('_malloc');
 var _hal_gfx_get_framebuffer = Module['_hal_gfx_get_framebuffer'] = makeInvalidEarlyAccess('_hal_gfx_get_framebuffer');
 var _hal_gfx_get_frame_count = Module['_hal_gfx_get_frame_count'] = makeInvalidEarlyAccess('_hal_gfx_get_frame_count');
+var _hal_gfx_get_telemetry_json = Module['_hal_gfx_get_telemetry_json'] = makeInvalidEarlyAccess('_hal_gfx_get_telemetry_json');
 var _hal_input_set_buttons = Module['_hal_input_set_buttons'] = makeInvalidEarlyAccess('_hal_input_set_buttons');
 var _hal_os_set_rom_data = Module['_hal_os_set_rom_data'] = makeInvalidEarlyAccess('_hal_os_set_rom_data');
 var _free = Module['_free'] = makeInvalidEarlyAccess('_free');
-var _malloc = Module['_malloc'] = makeInvalidEarlyAccess('_malloc');
 var _hal_os_get_rom_status = Module['_hal_os_get_rom_status'] = makeInvalidEarlyAccess('_hal_os_get_rom_status');
-var _hal_engine_init = Module['_hal_engine_init'] = makeInvalidEarlyAccess('_hal_engine_init');
-var _hal_engine_is_initialized = Module['_hal_engine_is_initialized'] = makeInvalidEarlyAccess('_hal_engine_is_initialized');
-var _hal_engine_step = Module['_hal_engine_step'] = makeInvalidEarlyAccess('_hal_engine_step');
-var _hal_get_build_info = Module['_hal_get_build_info'] = makeInvalidEarlyAccess('_hal_get_build_info');
 var _fflush = makeInvalidEarlyAccess('_fflush');
-var _strerror = makeInvalidEarlyAccess('_strerror');
+var _hal_os_get_dma_transfers = Module['_hal_os_get_dma_transfers'] = makeInvalidEarlyAccess('_hal_os_get_dma_transfers');
+var _hal_os_get_dma_bytes = Module['_hal_os_get_dma_bytes'] = makeInvalidEarlyAccess('_hal_os_get_dma_bytes');
+var _hal_engine_init = Module['_hal_engine_init'] = makeInvalidEarlyAccess('_hal_engine_init');
+var _hal_engine_step = Module['_hal_engine_step'] = makeInvalidEarlyAccess('_hal_engine_step');
+var _hal_engine_is_initialized = Module['_hal_engine_is_initialized'] = makeInvalidEarlyAccess('_hal_engine_is_initialized');
+var _hal_engine_get_frame_count = Module['_hal_engine_get_frame_count'] = makeInvalidEarlyAccess('_hal_engine_get_frame_count');
+var _hal_engine_get_stage_num = Module['_hal_engine_get_stage_num'] = makeInvalidEarlyAccess('_hal_engine_get_stage_num');
+var _hal_get_build_info = Module['_hal_get_build_info'] = makeInvalidEarlyAccess('_hal_get_build_info');
 var _emscripten_stack_get_end = makeInvalidEarlyAccess('_emscripten_stack_get_end');
 var _emscripten_stack_get_base = makeInvalidEarlyAccess('_emscripten_stack_get_base');
+var _strerror = makeInvalidEarlyAccess('_strerror');
 var _emscripten_stack_init = makeInvalidEarlyAccess('_emscripten_stack_init');
 var _emscripten_stack_get_free = makeInvalidEarlyAccess('_emscripten_stack_get_free');
 var __emscripten_stack_restore = makeInvalidEarlyAccess('__emscripten_stack_restore');
@@ -1665,21 +1671,26 @@ var __indirect_function_table = makeInvalidEarlyAccess('__indirect_function_tabl
 var wasmMemory = makeInvalidEarlyAccess('wasmMemory');
 
 function assignWasmExports(wasmExports) {
+  assert(typeof wasmExports['malloc'] != 'undefined', 'missing Wasm export: malloc');
   assert(typeof wasmExports['hal_gfx_get_framebuffer'] != 'undefined', 'missing Wasm export: hal_gfx_get_framebuffer');
   assert(typeof wasmExports['hal_gfx_get_frame_count'] != 'undefined', 'missing Wasm export: hal_gfx_get_frame_count');
+  assert(typeof wasmExports['hal_gfx_get_telemetry_json'] != 'undefined', 'missing Wasm export: hal_gfx_get_telemetry_json');
   assert(typeof wasmExports['hal_input_set_buttons'] != 'undefined', 'missing Wasm export: hal_input_set_buttons');
   assert(typeof wasmExports['hal_os_set_rom_data'] != 'undefined', 'missing Wasm export: hal_os_set_rom_data');
   assert(typeof wasmExports['free'] != 'undefined', 'missing Wasm export: free');
-  assert(typeof wasmExports['malloc'] != 'undefined', 'missing Wasm export: malloc');
   assert(typeof wasmExports['hal_os_get_rom_status'] != 'undefined', 'missing Wasm export: hal_os_get_rom_status');
-  assert(typeof wasmExports['hal_engine_init'] != 'undefined', 'missing Wasm export: hal_engine_init');
-  assert(typeof wasmExports['hal_engine_is_initialized'] != 'undefined', 'missing Wasm export: hal_engine_is_initialized');
-  assert(typeof wasmExports['hal_engine_step'] != 'undefined', 'missing Wasm export: hal_engine_step');
-  assert(typeof wasmExports['hal_get_build_info'] != 'undefined', 'missing Wasm export: hal_get_build_info');
   assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
-  assert(typeof wasmExports['strerror'] != 'undefined', 'missing Wasm export: strerror');
+  assert(typeof wasmExports['hal_os_get_dma_transfers'] != 'undefined', 'missing Wasm export: hal_os_get_dma_transfers');
+  assert(typeof wasmExports['hal_os_get_dma_bytes'] != 'undefined', 'missing Wasm export: hal_os_get_dma_bytes');
+  assert(typeof wasmExports['hal_engine_init'] != 'undefined', 'missing Wasm export: hal_engine_init');
+  assert(typeof wasmExports['hal_engine_step'] != 'undefined', 'missing Wasm export: hal_engine_step');
+  assert(typeof wasmExports['hal_engine_is_initialized'] != 'undefined', 'missing Wasm export: hal_engine_is_initialized');
+  assert(typeof wasmExports['hal_engine_get_frame_count'] != 'undefined', 'missing Wasm export: hal_engine_get_frame_count');
+  assert(typeof wasmExports['hal_engine_get_stage_num'] != 'undefined', 'missing Wasm export: hal_engine_get_stage_num');
+  assert(typeof wasmExports['hal_get_build_info'] != 'undefined', 'missing Wasm export: hal_get_build_info');
   assert(typeof wasmExports['emscripten_stack_get_end'] != 'undefined', 'missing Wasm export: emscripten_stack_get_end');
   assert(typeof wasmExports['emscripten_stack_get_base'] != 'undefined', 'missing Wasm export: emscripten_stack_get_base');
+  assert(typeof wasmExports['strerror'] != 'undefined', 'missing Wasm export: strerror');
   assert(typeof wasmExports['emscripten_stack_init'] != 'undefined', 'missing Wasm export: emscripten_stack_init');
   assert(typeof wasmExports['emscripten_stack_get_free'] != 'undefined', 'missing Wasm export: emscripten_stack_get_free');
   assert(typeof wasmExports['_emscripten_stack_restore'] != 'undefined', 'missing Wasm export: _emscripten_stack_restore');
@@ -1697,21 +1708,26 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['dynCall_iidiiiii'] != 'undefined', 'missing Wasm export: dynCall_iidiiiii');
   assert(typeof wasmExports['memory'] != 'undefined', 'missing Wasm export: memory');
   assert(typeof wasmExports['__indirect_function_table'] != 'undefined', 'missing Wasm export: __indirect_function_table');
+  _malloc = Module['_malloc'] = createExportWrapper('malloc', wasmExports['malloc'], 1);
   _hal_gfx_get_framebuffer = Module['_hal_gfx_get_framebuffer'] = createExportWrapper('hal_gfx_get_framebuffer', wasmExports['hal_gfx_get_framebuffer'], 0);
   _hal_gfx_get_frame_count = Module['_hal_gfx_get_frame_count'] = createExportWrapper('hal_gfx_get_frame_count', wasmExports['hal_gfx_get_frame_count'], 0);
+  _hal_gfx_get_telemetry_json = Module['_hal_gfx_get_telemetry_json'] = createExportWrapper('hal_gfx_get_telemetry_json', wasmExports['hal_gfx_get_telemetry_json'], 2);
   _hal_input_set_buttons = Module['_hal_input_set_buttons'] = createExportWrapper('hal_input_set_buttons', wasmExports['hal_input_set_buttons'], 3);
   _hal_os_set_rom_data = Module['_hal_os_set_rom_data'] = createExportWrapper('hal_os_set_rom_data', wasmExports['hal_os_set_rom_data'], 2);
   _free = Module['_free'] = createExportWrapper('free', wasmExports['free'], 1);
-  _malloc = Module['_malloc'] = createExportWrapper('malloc', wasmExports['malloc'], 1);
   _hal_os_get_rom_status = Module['_hal_os_get_rom_status'] = createExportWrapper('hal_os_get_rom_status', wasmExports['hal_os_get_rom_status'], 0);
-  _hal_engine_init = Module['_hal_engine_init'] = createExportWrapper('hal_engine_init', wasmExports['hal_engine_init'], 0);
-  _hal_engine_is_initialized = Module['_hal_engine_is_initialized'] = createExportWrapper('hal_engine_is_initialized', wasmExports['hal_engine_is_initialized'], 0);
-  _hal_engine_step = Module['_hal_engine_step'] = createExportWrapper('hal_engine_step', wasmExports['hal_engine_step'], 0);
-  _hal_get_build_info = Module['_hal_get_build_info'] = createExportWrapper('hal_get_build_info', wasmExports['hal_get_build_info'], 0);
   _fflush = createExportWrapper('fflush', wasmExports['fflush'], 1);
-  _strerror = createExportWrapper('strerror', wasmExports['strerror'], 1);
+  _hal_os_get_dma_transfers = Module['_hal_os_get_dma_transfers'] = createExportWrapper('hal_os_get_dma_transfers', wasmExports['hal_os_get_dma_transfers'], 0);
+  _hal_os_get_dma_bytes = Module['_hal_os_get_dma_bytes'] = createExportWrapper('hal_os_get_dma_bytes', wasmExports['hal_os_get_dma_bytes'], 0);
+  _hal_engine_init = Module['_hal_engine_init'] = createExportWrapper('hal_engine_init', wasmExports['hal_engine_init'], 0);
+  _hal_engine_step = Module['_hal_engine_step'] = createExportWrapper('hal_engine_step', wasmExports['hal_engine_step'], 0);
+  _hal_engine_is_initialized = Module['_hal_engine_is_initialized'] = createExportWrapper('hal_engine_is_initialized', wasmExports['hal_engine_is_initialized'], 0);
+  _hal_engine_get_frame_count = Module['_hal_engine_get_frame_count'] = createExportWrapper('hal_engine_get_frame_count', wasmExports['hal_engine_get_frame_count'], 0);
+  _hal_engine_get_stage_num = Module['_hal_engine_get_stage_num'] = createExportWrapper('hal_engine_get_stage_num', wasmExports['hal_engine_get_stage_num'], 0);
+  _hal_get_build_info = Module['_hal_get_build_info'] = createExportWrapper('hal_get_build_info', wasmExports['hal_get_build_info'], 0);
   _emscripten_stack_get_end = wasmExports['emscripten_stack_get_end'];
   _emscripten_stack_get_base = wasmExports['emscripten_stack_get_base'];
+  _strerror = createExportWrapper('strerror', wasmExports['strerror'], 1);
   _emscripten_stack_init = wasmExports['emscripten_stack_init'];
   _emscripten_stack_get_free = wasmExports['emscripten_stack_get_free'];
   __emscripten_stack_restore = wasmExports['_emscripten_stack_restore'];

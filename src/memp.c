@@ -37,12 +37,21 @@ void mempInit(void)
 
 const char *tokenFind(s32 arg0, const char *arg1);
 long int strtol(const char *str, char **endptr, int base);
+#include <stdlib.h>
+
 void mempCheckMemflagTokens(s32 poolAreaStart, s32 poolAreaSize)
 {
     s_mempMVALS poolSizes;
+#ifdef TARGET_WEB
+    static u8 *s_WebEngineHeap = NULL;
+    if (s_WebEngineHeap == NULL) {
+        u8 *raw = (u8 *)malloc(16 * 1024 * 1024 + 64);
+        s_WebEngineHeap = (u8 *)(((uintptr_t)raw + 15) & ~15);
+    }
+    poolAreaStart = (s32)(uintptr_t)s_WebEngineHeap;
+    poolAreaSize = 16 * 1024 * 1024;
+#endif
 
-    //set pool 0 to what boss wants (room_model_buffer)
-    //pool 0 = TotalPoolArea
     g_mempPools[MEMPOOL_TOTAL].start = (u8 *)(uintptr_t)poolAreaStart;
     g_mempPools[MEMPOOL_TOTAL].end = (u8 *)(uintptr_t)(poolAreaStart + poolAreaSize);
 
@@ -63,7 +72,7 @@ void mempCheckMemflagTokens(s32 poolAreaStart, s32 poolAreaSize)
     if (poolSizes.me == 0)
     {
         poolSizes.mf = 0;
-        poolSizes.me = ((j_text_trigger ? 308 : 296) * 1024);
+        poolSizes.me = 2 * 1024 * 1024; // 2MB permanent pool for web port
         poolSizes.ml = poolAreaSize - poolSizes.me;
     }
 
@@ -78,121 +87,72 @@ void mempSetBankStarts(s32 poolSizes[MEMPOOL_COUNT+1])
     s32 mempRequested;
     s32 mempStart;
 
-    //set MF, ML, ME first
     i = 0;
     do
     {
-        // assign the "xxxIndex" the value of xxx+1 then skip "Indices", 0=2=mf, 2=4=ml, 4=6=me, 6=8=end
         bankstarts[poolSizes[i]] = poolSizes[i+1];
         i += 2;
-    } while (poolSizes[i] != 0); //while sizes not = 0 (bank 7 = 0)
-    //  0 1 2 3            4           5     6
-    // {0,0,0,0,poolAreaSize - 303104, 0, 303104}
+    } while (poolSizes[i] != 0);
 
-    //for each bankstart, add current to next
     for (i = MEMPOOL_TOTAL; i < MEMPOOL_COUNT - 1; i++)
     {
         bankstarts[i + 1] += bankstarts[i];
     }
-    // {0,0,0,0,poolAreaSize - 303104, poolAreaSize - 303104, poolAreaSize}
 
+    mempRequested = bankstarts[MEMPOOL_COUNT - 1];
+    mempLen = (g_mempPools[MEMPOOL_TOTAL].end - g_mempPools[MEMPOOL_TOTAL].start);
 
-    mempRequested = bankstarts[MEMPOOL_COUNT - 1]; //total accumulated size of banks = poolAreaSize
-    mempLen  = (g_mempPools[MEMPOOL_TOTAL].end - g_mempPools[MEMPOOL_TOTAL].start);
-
-    //for each bankstart, multiply by total pool size, then divide by size of banks 1-7
-    //spread each bank evenly
     for (i = MEMPOOL_TOTAL; i < MEMPOOL_COUNT; i++)
     {
         bankstarts[i] = ((s64)bankstarts[i] * mempLen) / mempRequested;
     }
-    // {0,0,0,0,poolAreaSize - 303104, poolAreaSize - 303104, poolAreaSize}
 
     for (i = MEMPOOL_TOTAL; i < MEMPOOL_COUNT; i++)
     {
-        bankstarts[i] = ALIGN16_b(bankstarts[i]);
+        bankstarts[i] = (bankstarts[i] + 15) & ~15;
     }
-    // {0,0,0,0,poolAreaSize - 303104, poolAreaSize - 303104, poolAreaSize}
-
 
     mempStart = (uintptr_t)g_mempPools[MEMPOOL_TOTAL].start;
-    //for each bank 1-7, add new start position
+    mempStart = (mempStart + 15) & ~15;
+
     for (i = MEMPOOL_TOTAL; i < MEMPOOL_COUNT - 1; i++)
     {
-        g_mempPools[i + 1].start = (u8 *)(uintptr_t)(bankstarts[i] + mempStart);
+        g_mempPools[i + 1].start = (u8 *)(uintptr_t)(((bankstarts[i] + 15) & ~15) + mempStart);
         g_mempPools[i + 1].pos   = 0;
-        g_mempPools[i + 1].end   = (u8 *)(uintptr_t)(bankstarts[i + 1] + mempStart);
+        g_mempPools[i + 1].end   = (u8 *)(uintptr_t)(((bankstarts[i + 1] + 15) & ~15) + mempStart);
     }
-    /*
-                           rel-start              size
-    g_memPools[TOTAL]      0                      poolArea
-    g_memPools[MF]         0                      0
-    g_memPools[2]          0                      0
-    g_memPools[ML]         0                      0
-    g_memPools[STAGE]      0                      poolAreaSize - 303104
-    g_memPools[ME]         poolAreaSize - 303104  0
-    g_memPools[PERMANENT]  poolAreaSize - 303104  303104
-    */
 }
 
 
 void *mempAllocBytesInBank(u32 bytes, u8 poolnum)
 {
-    /*
-     * Retain this address expression. Using
-     * &g_mempPools[poolnum] changes regalloc.
-     */
-    MemoryPool *pool = (MemoryPool *)(((u8 **)g_mempPools) + ((poolnum * 2) << 1));
-    u8 *allocation = pool->pos;
-
-#ifdef DEBUG
-    if ((poolnum < 0) || (4 < poolnum))
-    {
-        osSyncPrintf("mempAllocBytesInBank from invalid heap %d!", poolnum);
-    }
-#endif
+    MemoryPool *pool = &g_mempPools[poolnum];
+    bytes = (bytes + 15) & ~15;
+    u8 *allocation = (u8 *)(((uintptr_t)pool->pos + 15) & ~15);
 
     if (pool->pos == NULL)
     {
-        while (1);
+        osSyncPrintf("[mempAllocBytesInBank] ERROR: pool %d pos is NULL\n", poolnum);
+        return NULL;
     }
 
-    if (pool->pos > pool->end)
+    if (allocation + bytes > (u8 *)pool->end)
     {
-        nulled_mempLoopAllMemBanks();
-
-        while (1);
-    }
-
-    if (pool->pos + bytes > pool->end)
-    {
-        if (g_mempPools[MEMPOOL_PERMANENT].pos + bytes <= g_mempPools[MEMPOOL_PERMANENT].end)
+        if (poolnum != MEMPOOL_PERMANENT && g_mempPools[MEMPOOL_PERMANENT].pos != NULL)
         {
-            /*
-             * There was probably debug code in the original that got mostly
-             * stripped, but it still perturbs register allocation. These
-             * statements fill t1/t3/t4 so the registers match.
-             */
-            if (needmemallocation);
-            if (&D_8002440C == &D_80024408);
-            if (needmemallocation);
-            if (&D_80024410 == &D_80024408);
-            if (!needmemallocation);
-
-            needmemallocation = TRUE;
-
-            return mempAllocBytesInBank(bytes, MEMPOOL_PERMANENT);
+            u8 *perm_alloc = (u8 *)(((uintptr_t)g_mempPools[MEMPOOL_PERMANENT].pos + 15) & ~15);
+            if (perm_alloc + bytes <= (u8 *)g_mempPools[MEMPOOL_PERMANENT].end)
+            {
+                needmemallocation = TRUE;
+                return mempAllocBytesInBank(bytes, MEMPOOL_PERMANENT);
+            }
         }
-
-        nulled_mempLoopAllMemBanks();
-
-        while (1);
+        osSyncPrintf("[mempAllocBytesInBank] ERROR: pool %d OOM (pos=%p alloc=%p + 0x%x > end=%p)\n", poolnum, pool->pos, allocation, bytes, pool->end);
+        return NULL;
     }
 
-    pool->pos += bytes;
-    pool->prevpos = allocation;
-
-    if (needmemallocation);
+    pool->pos = (void *)(allocation + bytes);
+    pool->prevpos = (void *)allocation;
 
     return allocation;
 }
@@ -207,46 +167,45 @@ MEMP_ADD_ENTRY_RESULT mempAddEntryOfSizeToBank(void *allocation, s32 newsize, u8
     s32 origsize;
     s32 growsize;
 
+    newsize = (newsize + 15) & ~15;
+
     if (needmemallocation && allocation == g_mempPools[MEMPOOL_PERMANENT].prevpos)
     {
         poolnum = MEMPOOL_PERMANENT;
     }
 
-    allocation = (void *)(u64)allocation;
     pool = &g_mempPools[poolnum];
 
     if (pool->pos == 0)
     {
-        while (TRUE);
+        osSyncPrintf("[mempAddEntryOfSizeToBank] pool %d pos is 0\n", poolnum);
+        return MEMP_ADD_ENTRY_NOT_LAST_ALLOCATION;
     }
 
     if (allocation != pool->prevpos)
     {
+        osSyncPrintf("[mempAddEntryOfSizeToBank] alloc=%p != prevpos=%p (pos=%p)\n", allocation, pool->prevpos, pool->pos);
         return MEMP_ADD_ENTRY_NOT_LAST_ALLOCATION;
     }
 
-    origsize = pool->pos - pool->prevpos;
+    origsize = (u8 *)pool->pos - (u8 *)pool->prevpos;
     growsize = newsize - origsize;
+
+    osSyncPrintf("[mempAddEntryOfSizeToBank] pool %d: alloc=%p origsize=0x%x newsize=0x%x growsize=%d pos=%p -> %p\n",
+        poolnum, allocation, origsize, newsize, growsize, pool->pos, (u8 *)pool->pos + growsize);
 
     if (growsize <= 0)
     {
-        pool->pos += growsize;
+        pool->pos = (void *)((u8 *)pool->pos + growsize);
         return MEMP_ADD_ENTRY_SUCCESS;
     }
 
-    if (pool->pos > pool->end)
+    if ((u8 *)pool->pos + growsize > (u8 *)pool->end)
     {
-        nulled_mempLoopAllMemBanks();
-        while (TRUE);
+        return MEMP_ADD_ENTRY_NOT_LAST_ALLOCATION;
     }
 
-    if (pool->pos + growsize > pool->end)
-    {
-        nulled_mempLoopAllMemBanks();
-        while (TRUE);
-    }
-
-    pool->pos += growsize;
+    pool->pos = (void *)((u8 *)pool->pos + growsize);
     return MEMP_ADD_ENTRY_SUCCESS;
 }
 
@@ -267,7 +226,12 @@ s32 mempGetBankSizeLeft(u8 bank) {
         bank = MEMPOOL_PERMANENT;
     }
 
-    return g_mempPools[bank].end - g_mempPools[bank].pos;
+    uintptr_t cur_alloc = ((uintptr_t)g_mempPools[bank].pos + 15) & ~15;
+    uintptr_t end_pos = (uintptr_t)g_mempPools[bank].end;
+    if (cur_alloc >= end_pos) {
+        return 0;
+    }
+    return (s32)(end_pos - cur_alloc);
 }
 
 // Last three bits contains the bank, the rest contains the size.

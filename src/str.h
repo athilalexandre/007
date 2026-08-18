@@ -2,7 +2,11 @@
 #define _STR_H_
 
 #include <ultra64.h>
-#include <stddef.h>
+
+#ifndef _SIZE_T_DEFINED
+#define _SIZE_T_DEFINED
+typedef unsigned long size_t;
+#endif
 
 char *strcpy(char *dst, const char *src);
 char *strncpy(char *dst, const char *src, size_t n);

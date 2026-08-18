@@ -5,7 +5,7 @@
 
 // bss
 //CODE.bss:80076A50
-char g_ModelHitEntries[0xC];
+// char g_ModelHitEntries[0xC]; (defined in initunk_005450.c)
 //CODE.bss:80076A5C
 u32 dword_CODE_bss_80076A5C;
 //CODE.bss:80076A60
@@ -49,7 +49,7 @@ char dword_CODE_bss_80076ADE;
 char dword_CODE_bss_80076ADF;
 char dword_CODE_bss_80076AE0[0x2E28];
 //CODE.bss:80079908
-char g_ModelHitEntriesPenultimate[0x28];
+// char g_ModelHitEntriesPenultimate[0x28]; (defined in initunk_005450.c)
 
 //CODE.bss:80079930
 struct AnimModelSlot *g_AnimModelSlots;

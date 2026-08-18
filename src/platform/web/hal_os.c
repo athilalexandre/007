@@ -80,6 +80,7 @@ s32 osPiStartDma(OSIoMesg *mb, s32 priority, s32 direction, u32 devAddr, void *d
         return -1;
     }
 
+        printf("[osPiStartDma] devAddr=0x%08X dramAddr=%p size=%u romBufferSize=%u\n", devAddr, dramAddr, size, (u32)s_RomBufferSize);
     /* Bounds and overflow check */
     if (devAddr >= s_RomBufferSize || (devAddr + size) > s_RomBufferSize || (devAddr + size) < devAddr) {
         return -1;
@@ -173,8 +174,9 @@ void *setSPToEnd(u8 *stack, u32 size) { return stack ? stack + size : NULL; }
 void osSyncPrintf(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    vprintf(fmt, args);
+    vfprintf(stdout, fmt, args);
     va_end(args);
+    fflush(stdout);
 }
 u64 osClockRate = 62500000;
 static OSThread s_MainThread;
@@ -193,3 +195,14 @@ u32 tlbRandomGetNext(void) { return 0; }
 void osWriteHost(void *dramAddr, u32 nbytes) {}
 void osReadHost(void *dramAddr, u32 nbytes) {}
 s32 rmonGetToken(void) { return 0; }
+
+u32 hal_os_get_dma_transfers(void) {
+    return s_DmaTransferCount;
+}
+
+u32 hal_os_get_dma_bytes(void) {
+    return s_DmaTotalBytesRead;
+}
+s32 osEepromProbe(OSMesgQueue *mq) { return 1; }
+s32 osEepromLongRead(OSMesgQueue *mq, u8 address, u8 *buffer, int nbytes) { return 0; }
+s32 osEepromLongWrite(OSMesgQueue *mq, u8 address, u8 *buffer, int nbytes) { return 0; }

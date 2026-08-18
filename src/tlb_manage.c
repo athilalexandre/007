@@ -131,8 +131,14 @@ void tlbmanageEstablishManagementTable(void)
         g_tlbMappingTable[i].entry0 = 1;
     }
 
+#ifdef TARGET_WEB
+    static u8 s_WebTlbHeap[MAPPING_TABLE_COUNT * PAGE_SIZE + 0x10000];
+    g_tlbmanageTlbAllocatedBlock = (u8(*)[TLB_BLOCK_SIZE])&s_WebTlbHeap[0];
+    g_tlbmanageMappingTableEnd = (u32)&s_WebTlbHeap[sizeof(s_WebTlbHeap)];
+#else
     g_tlbmanageTlbAllocatedBlock = (u8(*)[TLB_BLOCK_SIZE]) (((u32)&sp_boot & ~(PAGE_SIZE - 1)) - (MAPPING_TABLE_COUNT * PAGE_SIZE));
     g_tlbmanageMappingTableEnd = ((u32)&g_tlbManagementTable) + 0xFFC08000;
+#endif
 }
 
 /**

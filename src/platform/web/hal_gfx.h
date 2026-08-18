@@ -1,33 +1,26 @@
-#ifndef _HAL_GFX_H_
-#define _HAL_GFX_H_
+#ifndef HAL_GFX_H
+#define HAL_GFX_H
 
 #include <ultra64.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define SCREEN_WIDTH  320
+#define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
 
 typedef struct {
-    u16 *pixels;
-    u32 width;
-    u32 height;
-    u32 stride;
-    u32 format; /* 0 = RGBA5551 */
-    u32 frameNumber;
-} hal_framebuffer_info_t;
+    u32 total_commands;
+    u32 total_triangles;
+    u32 total_vertices;
+    u32 total_textures;
+    u32 unsupported_commands;
+    u32 max_dl_depth;
+    u32 commands_by_opcode[256];
+} HalGfxTelemetry;
 
 void hal_gfx_init(void);
-void hal_gfx_reset(void);
-void hal_gfx_render_display_list(Gfx *gdl);
-hal_framebuffer_info_t hal_gfx_get_framebuffer_info(void);
+void hal_gfx_execute_display_list(Gfx *start, Gfx *end);
 u16 *hal_gfx_get_framebuffer(void);
 u32 hal_gfx_get_frame_count(void);
+const HalGfxTelemetry *hal_gfx_get_telemetry(void);
+u32 hal_gfx_get_telemetry_json(char *buf, u32 maxlen);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _HAL_GFX_H_ */
+#endif /* HAL_GFX_H */

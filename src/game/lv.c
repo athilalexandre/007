@@ -377,8 +377,7 @@ void lvlStageLoad(s32 stage)
     bullet_sparks_reset_all();
 #endif
     texReset();
-    load_font_tables();
-
+    load_font_tables(); 
     /* If title screen, initialize screen and folder setup.
     * Otherwise:
     * - enable cheats for player
@@ -388,8 +387,7 @@ void lvlStageLoad(s32 stage)
     */
     if (stage == LEVELID_TITLE)
     {
-        init_menus_or_reset();
-    }
+        init_menus_or_reset();     }
     else
     {
         g_NewCheatUnlocked = 0;
@@ -478,22 +476,7 @@ void lvlStageLoad(s32 stage)
         }
     }
 
-    something_with_stage_objectives();
-    mpwatchUnpauseGame();
-    sub_GAME_7F09B820();
-    initModelHitEntryFreeList();
-    modelmgrResetSlotCounts();
-    init_load_objpos_table();
-    reinit_between_menus();
-    init_sound_effects_registers();
-    init_guards();
-    bodiesReset(stage);
-    proplvreset2(stage);
-    alloc_explosion_smoke_casing_scorch_impact_buffers();
-    alloc_shattered_window_pieces();
-    sub_GAME_7F007290();
-    initCheatTextBuffer();
-
+    something_with_stage_objectives();     mpwatchUnpauseGame();     sub_GAME_7F09B820();     initModelHitEntryFreeList();     modelmgrResetSlotCounts();     init_load_objpos_table();     reinit_between_menus();     init_sound_effects_registers();     init_guards();     bodiesReset(stage);     proplvreset2(stage);     alloc_explosion_smoke_casing_scorch_impact_buffers();     alloc_shattered_window_pieces();     sub_GAME_7F007290();     initCheatTextBuffer(); 
     if (g_CurrentStageToLoad == LEVELID_TITLE)
     {
         disableOnscreenCheatText();

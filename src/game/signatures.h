@@ -1,0 +1,123 @@
+#ifndef SIGNATURES_H
+#define SIGNATURES_H
+
+#include <PR/ultratypes.h>
+#include <PR/gbi.h>
+
+// Forward struct declarations
+struct PropRecord;
+struct sImageTableEntry;
+struct save_data;
+typedef struct PropRecord PropRecord;
+typedef struct save_data save_data;
+
+// Core Engine Signatures
+struct texpool;
+void texLoadFromDisplayList(Gfx *gdl, struct texpool *arg1);
+void *mempAllocBytesInBank(u32 bytes, u8 poolnum);
+void memaReset(void *heapaddr, u32 heapsize);
+void lvlStageLoad(s32 stage);
+Gfx *lvlRender(Gfx *gdl);
+void dynSwapBuffers(void);
+void dynInitMemory(void);
+Gfx *dynGetMasterDisplayList(void);
+void waitForNextFrame(void);
+void bodiesReset(u32 stagenum);
+s32 indycommInit(void);
+void debmenuInit(void);
+void textInit(void);
+void viInit(void);
+void viInitVideoSettings(void);
+void speedgraphInit(void);
+void default_player_perspective_and_height(void);
+void store_osgetcount(void);
+void null_init_main_1(void);
+void null_init_main_2(void);
+void casingsInit(void);
+void alloc_load_expand_ani_table(void);
+void reset_play_data_ptrs(void);
+void init_player_data_ptrs_construct_viewports(int playercount);
+void joyCheckStatusThreadSafe(void);
+typedef unsigned long size_t;
+void osSyncPrintf(const char *fmt, ...);
+void load_font_tables(void);
+void romCopy(void *target, void *source, u32 size);
+void texSelect(Gfx **gdlptr, struct sImageTableEntry *tconfig, u32 arg2, s32 arg3, u32 ulst);
+void gotoRightDebugOption(void);
+void currentPlayerSetYAutoAimEnabled(s32 arg0);
+void cleanup_REMOVED_(void);
+void set_missionstate_zero(void);
+void set_players_team_or_scenario_item_flag(s32 team, s32 flag);
+f32 sub_GAME_7F0B4F9C(s32 arg0);
+void rle_expand_8bit(u8 *src, u8 *dst);
+f32 get_horizontal_offset_on_solo_watch_menu_for_item(s32 arg0);
+f32 get_depth_offset_solo_watch_menu_inventory_page_for_item(s32 arg0);
+void fileCopyDemoSaveToRamRomSave(u32 folder, struct save_data *save);
+void mpwatchMenuTick(void);
+void cleanupExplosions(void);
+void gotoBelowDebugOption(void);
+f32 get_yrotation_solo_watch_menu_for_item(s32 arg0);
+void sub_GAME_7F0C1310(void);
+void sub_GAME_7F0A6A80(void);
+void debmenuSetMenu(char **labels, s32 (*positions)[2], s32 *offsets);
+void chrpropDeregisterRoom(PropRecord *prop, s16 room);
+f32 bondinvGetDepthForIndex(s32 index);
+void setRamRomRecordSlot(s32 slot);
+void set_sound_effect_for_weapontype_collection(s32 type);
+void currentPlayerSetMatrix10C8(Mtx *matrix);
+struct MonitorRecord;
+void save_img_index_to_obj_ani_slot(struct MonitorRecord *mon, void *unk88);
+void cur_player_set_screen_setting(u32 setting);
+void alloc_false_GUARDdata_to_exec_global_action(void);
+void setTextOrientation(s32 orientation);
+f32 get_vertical_position_solo_watch_menu_main_page_for_item(s32 arg0);
+f32 get_depth_on_solo_watch_menu_page_for_item(s32 arg0);
+void set_favorite_weapon_for_every_player(void);
+void set_BONDdata_outside_watch_menu_flag(s32 flag);
+void load_ramrom_from_devtool(void);
+
+#endif
+struct bondstruct_unk_animation_related;
+void initAnimationsBuffer(struct bondstruct_unk_animation_related* animBuffer, OSMesgQueue* mq, s32 unused);
+void sub_GAME_7F05C614(void);
+void cleanupObjectSounds(void);
+void cleanupGuardData(void);
+void debmenuSetPos(s32 arg0, s32 arg1);
+void langClearBank(s32 arg0);
+void fileGenerateCRC(u8 *addressA, u8 *addressB, struct save_data *retval);
+void setMPWeaponSet(s32 arg0);
+void sub_GAME_7F008DE4(u8 **addr, s32 *size);
+void fileUpdateSelectedBondInSave(s32 arg0);
+void updateFrameCounters(s32 arg0);
+void sub_GAME_7F078464(s32 arg0);
+void increment_num_suicides_display_MP(void);
+f32 get_lateral_position_solo_watch_menu_main_page_for_item(s32 arg0);
+void matrix_4x4_7F058C64(void);
+void set_obj_collision_flag(s32 arg0);
+void currentPlayerSetCameraMode(s32 arg0);
+void clear_light_fixturetable_in_room(s32 arg0);
+void memaFree(void *addr, s32 size);
+void select_ramrom_to_play(void);
+f32 bondinvGetDepthWatchForIndex(s32 arg0);
+f32 bondinvGetHoffsetForIndex(s32 arg0);void initWeaponAnimGroups(void);void alloc_init_GUARDdata_entries(s32 count);
+void setupInitLevel(s32 stagenum);
+void bgInitRoomTrans(void);
+void portalInit(void);
+void lightsInit(void);void modelmgrSetLevelResetting(s32 resetting);
+void modelmgrResetSlotCounts(void);
+void modelmgrAllocateModelSlots(s32 numobjs);
+void modelmgrAllocateAnimModelSlots(s32 numanimated);
+void initModelHitEntryFreeList(void);
+void sub_GAME_7F007290(void);
+void reinit_gunheld_totaltime(void);
+void alloc_additional_item_slots(s32 additionalentries);
+void init_load_objpos_table(void);
+void reinit_between_menus(void);
+void init_sound_effects_registers(void);
+void init_menus_or_reset(void);
+void alloc_intro_matrices(void);
+void init_path_table_links(void);
+void alloc_explosion_smoke_casing_scorch_impact_buffers(void);
+void disableOnscreenCheatText(void);
+void initCheatTextBuffer(void);
+void initCasingPool(void);

@@ -244,6 +244,7 @@ void langInit(void) {
 	}
     g_LangBanks[LGUN] = _fileNameLoadToBank(LnameX_lookuptable[LGUN][j_text_trigger], FILELOADMETHOD_DEFAULT, 0x100, MEMPOOL_PERMANENT);
     g_LangBanks[LTITLE] = _fileNameLoadToBank(LnameX_lookuptable[LTITLE][j_text_trigger], FILELOADMETHOD_DEFAULT, 0x100, MEMPOOL_PERMANENT);
+    osSyncPrintf("[langInit] g_LangBanks[LTITLE]=%p\n", (void *)g_LangBanks[LTITLE]);
     g_LangBanks[LMPMENU] = _fileNameLoadToBank(LnameX_lookuptable[LMPMENU][j_text_trigger], FILELOADMETHOD_DEFAULT, 0x100, MEMPOOL_PERMANENT);
     g_LangBanks[LPROPOBJ] = _fileNameLoadToBank(LnameX_lookuptable[LPROPOBJ][j_text_trigger], FILELOADMETHOD_DEFAULT, 0x100, MEMPOOL_PERMANENT);
     g_LangBanks[LMPWEAPONS] = _fileNameLoadToBank(LnameX_lookuptable[LMPWEAPONS][j_text_trigger], FILELOADMETHOD_DEFAULT, 0x100, MEMPOOL_PERMANENT);
@@ -374,13 +375,22 @@ void langClearBank(s32 textBank) {
  */
 u8 * langGet(s32 slotID)
 {
-    u32 * textbank_ptr = g_LangBanks[slotID >> 10]; /* get the text file bank ID index the text ptr table */
-    u32 textslot_offset = textbank_ptr[slotID & 0x03FF]; /* load the textbank ptr table then get the slot's offset */
+    u32 bankID = ((u32)slotID) >> 10;
+    if (bankID >= 45 || !g_LangBanks[bankID]) {
+        return (u8 *)"";
+    }
+    u32 * textbank_ptr = (u32 *)g_LangBanks[bankID];
+    u32 raw_offset = textbank_ptr[slotID & 0x03FF];
+    u32 textslot_offset = raw_offset;
+#ifdef TARGET_WEB
+    textslot_offset = __builtin_bswap32(raw_offset);
+#endif
 
-    u32 output_slot = textslot_offset; /* add the text slot offset to the base ptr to get the ptr to text file's slot */
-    output_slot += (u32)textbank_ptr;
-    #ifdef DEBUG
-    return (textslot_offset != 0) ? (u8 *)output_slot : "Sorry, string not loaded.";
-    #endif
-    return (textslot_offset != 0) ? (u8*)output_slot : NULL;
+    osSyncPrintf("[langGet] slotID=0x%04X bank=%d slot=%d ptr=%p raw=0x%08X swapped=0x%08X str='%s'\n", slotID, bankID, slotID & 0x03FF, textbank_ptr, raw_offset, textslot_offset, (char *)((uintptr_t)textbank_ptr + textslot_offset));
+
+    if (textslot_offset == 0 || textslot_offset > 0x10000) {
+        return (u8 *)"";
+    }
+
+    return (u8 *)((uintptr_t)textbank_ptr + textslot_offset);
 }

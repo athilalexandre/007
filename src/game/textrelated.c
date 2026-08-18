@@ -95,40 +95,52 @@ extern u8 _fontbankgothicSegmentStart;
 
 void load_font_tables(void)
 {
+    s32 i;
     u32 len;
-	s32 i;
-    
-    text_spacing = 0;
-    text_orientation = 0;
-    text_wordwrap = 0;
-    overlap_correction = -1;
-    text_bilevel_filter = 0;
-    text_x = 0;
-    text_y = 0;
-    text_s = 0;
-    text_t = 0;
+    static int s_FontsLoaded = 0;
+    if (s_FontsLoaded) return;
+    s_FontsLoaded = 1;
 
-    len = (romptr_t)&_fontbankgothicSegmentEnd - (romptr_t)&_fontbankgothicSegmentStart;
-	ptrFontBankGothic = (struct font *)mempAllocBytesInBank(len, MEMPOOL_STAGE);
-	ptrFontBankGothicChars = ptrFontBankGothic->chars;
+#ifdef TARGET_WEB
+    len = 9392;
+    ptrFontBankGothic = (struct font *)mempAllocBytesInBank(len, MEMPOOL_PERMANENT);
+    ptrFontBankGothicChars = (struct fontchar *)((u8 *)ptrFontBankGothic + 676);
+    romCopy(ptrFontBankGothic, (void *) 0x2E63F0, len);
 
-	romCopy(ptrFontBankGothic, (void *) &_fontbankgothicSegmentRomStart, len);
+    for (i = 0; i < 13 * 13; i++) {
+        ptrFontBankGothic->kerning[i] = __builtin_bswap32(ptrFontBankGothic->kerning[i]);
+    }
+    for (i = 0; i < 94; i++) {
+        ptrFontBankGothicChars[i].index = __builtin_bswap32(ptrFontBankGothicChars[i].index);
+        ptrFontBankGothicChars[i].baseline = __builtin_bswap32(ptrFontBankGothicChars[i].baseline);
+        ptrFontBankGothicChars[i].height = __builtin_bswap32(ptrFontBankGothicChars[i].height);
+        ptrFontBankGothicChars[i].width = __builtin_bswap32(ptrFontBankGothicChars[i].width);
+        ptrFontBankGothicChars[i].kerningindex = __builtin_bswap32(ptrFontBankGothicChars[i].kerningindex);
+        u32 offset = __builtin_bswap32((uintptr_t)ptrFontBankGothicChars[i].pixeldata);
+        ptrFontBankGothicChars[i].pixeldata = (u8 *)ptrFontBankGothic + offset;
+    }
 
-    // Convert pointers
-	for (i = 0; i < 94; i++) {
-		ptrFontBankGothicChars[i].pixeldata += (uintptr_t)ptrFontBankGothic;
-	}
+    len = 13632;
+    ptrFontZurichBold = (struct font *)mempAllocBytesInBank(len, MEMPOOL_PERMANENT);
+    ptrFontZurichBoldChars = (struct fontchar *)((u8 *)ptrFontZurichBold + 676);
+    romCopy(ptrFontZurichBold, (void *) 0x2E88A0, len);
 
-    len = (romptr_t)&_fontzurichboldSegmentEnd - (romptr_t)&_fontzurichboldSegmentStart;
-	ptrFontZurichBold = (struct font *)mempAllocBytesInBank(len, MEMPOOL_STAGE);
-	ptrFontZurichBoldChars = ptrFontZurichBold->chars;
-
-	romCopy(ptrFontZurichBold, (void *) &_fontzurichboldSegmentRomStart, len);
-
-    // Convert pointers
-	for (i = 0; i < 94; i++) {
-		ptrFontZurichBoldChars[i].pixeldata += (uintptr_t)ptrFontZurichBold;
-	}
+    for (i = 0; i < 13 * 13; i++) {
+        ptrFontZurichBold->kerning[i] = __builtin_bswap32(ptrFontZurichBold->kerning[i]);
+    }
+    for (i = 0; i < 94; i++) {
+        ptrFontZurichBoldChars[i].index = __builtin_bswap32(ptrFontZurichBoldChars[i].index);
+        ptrFontZurichBoldChars[i].baseline = __builtin_bswap32(ptrFontZurichBoldChars[i].baseline);
+        ptrFontZurichBoldChars[i].height = __builtin_bswap32(ptrFontZurichBoldChars[i].height);
+        ptrFontZurichBoldChars[i].width = __builtin_bswap32(ptrFontZurichBoldChars[i].width);
+        ptrFontZurichBoldChars[i].kerningindex = __builtin_bswap32(ptrFontZurichBoldChars[i].kerningindex);
+        u32 offset = __builtin_bswap32((uintptr_t)ptrFontZurichBoldChars[i].pixeldata);
+        ptrFontZurichBoldChars[i].pixeldata = (u8 *)ptrFontZurichBold + offset;
+    }
+            ptrFontZurichBold, ptrFontZurichBoldChars,
+        ptrFontZurichBoldChars[0].width, ptrFontZurichBoldChars[0].height,
+        ptrFontZurichBoldChars[0].baseline, ptrFontZurichBoldChars[0].pixeldata);
+#endif
 }
 
 Gfx *microcode_constructor(Gfx *gdl) //fontGfxSetup
@@ -203,15 +215,17 @@ Gfx *textRenderGlyph(Gfx *gdl, s32 *x, s32 *y, struct fontchar *curchar, struct 
     s32 drawY;
 
 	drawY = *y + yOffset;
-	kerningOffset = font->kerning[prevchar->kerningindex * 13 + curchar->kerningindex] + text_spacing;
+	if (!curchar || !prevchar || !font) return gdl;
+    s32 pK = prevchar->kerningindex;
+    s32 cK = curchar->kerningindex;
+    if (pK < 0 || pK >= 13) pK = 0;
+    if (cK < 0 || cK >= 13) cK = 0;
+    kerningOffset = font->kerning[pK * 13 + cK] + text_spacing;
     *x -= (kerningOffset - 1);
 
     if (text_orientation || (*x > 0 && *x <= viGetX() && drawY + curchar->baseline <= viGetY()))
     {
-        if (clipX + clipWidth >= *x
-				&& clipY + clipHeight >= curchar->baseline + drawY
-				&& *x >= clipX
-				&& curchar->baseline + drawY + curchar->height >= clipY)
+        if (*x + curchar->width > 0 && *x < viGetX() && drawY + curchar->baseline + curchar->height > 0 && drawY < viGetY())
         {
             if (curchar->index < 0x80)
             {
@@ -405,8 +419,7 @@ Gfx *textRender(Gfx *gdl, s32 *x, s32 *y, char *text,
 			text++;
 			*x = savedx;
 		} else if (*text < 0x80) {
-			gdl = textRenderGlyph(gdl, x, y, &chars[*text - 0x21], &chars[prevchar - 0x21], font, savedx, savedy, width, height, yOffset);
-			prevchar = *text;
+						prevchar = *text;
 			text++;
 		} else {
 			u16 codepoint = ((*text & 0x7f) << 7) | (text[1] & 0x7f);
@@ -430,7 +443,7 @@ Gfx *textRender(Gfx *gdl, s32 *x, s32 *y, char *text,
 			sp74.index = codepoint + 0x80;
 			sp74.pixeldata = (void *)langGetJpnCharPixels(codepoint);
 
-			gdl = textRenderGlyph(gdl, x, y, &sp74, &sp74, font, savedx, savedy, width, height, yOffset);
+			gdl = textRenderGlyph(gdl, x, y, &sp74, &sp74, font, 0, 0, width, height, yOffset);
 
 			text += 2;
 		}
@@ -672,18 +685,22 @@ Gfx *textRenderOutlined(Gfx *gdl, s32 *x, s32 *y,
 void textMeasure(s32 *textheight, s32 *textwidth, char *text, struct fontchar *font1, struct font *font2, s32 lineheight)
 {
     char prevchar;
-	s32 longest;
-	s32 tmp;
+    s32 longest;
+    s32 tmp;
 
-	prevchar = 'H';
+    if (!textheight || !textwidth) return;
+    *textheight = 0;
+    *textwidth = 0;
+    if (!text || !font1 || !font2) return;
+
+    prevchar = 'H';
     tmp = 0;
-	longest = 0;
-	*textheight = 0;
-	*textwidth = 0;
+    longest = 0;
 
     if (lineheight == 0)
     {
-		lineheight = font1['['].baseline + font1['['].height;
+        lineheight = font1['[' - 0x21].baseline + font1['[' - 0x21].height;
+        if (lineheight <= 0) lineheight = 12;
     }
     
     if ((j_text_trigger) && (lineheight < 14))
@@ -695,54 +712,63 @@ void textMeasure(s32 *textheight, s32 *textwidth, char *text, struct fontchar *f
     {
         if (*text == ' ')
         {
-            // Space
             if (text[1] != '\n') {
-                *textwidth += SPACE_WIDTH;
+                *textwidth += 5;
             }
-
             prevchar = 'H';
             text++;
         }
         else if (*text == '\n')
         {
-            // Line break
             if (*textwidth > longest) {
                 longest = *textwidth;
             }
-
             *textwidth = 0;
             *textheight += lineheight;
             text++;
         }
-        else if (*text < 0x80)
+        else if ((unsigned char)*text >= 0x21 && (unsigned char)*text < 0x80)
         {
-            // Normal single-byte character
-            tmp = font2->kerning[font1[prevchar - 0x21].kerningindex * 13 + font1[*text - 0x21].kerningindex] + text_spacing - 1;
-            *textwidth = font1[*text - 0x21].width + *textwidth - tmp;
+            s32 prevIdx = (unsigned char)prevchar - 0x21;
+            s32 curIdx = (unsigned char)*text - 0x21;
+            if (prevIdx < 0 || prevIdx >= 94) prevIdx = 'H' - 0x21;
+            if (curIdx < 0 || curIdx >= 94) curIdx = 0;
+
+            s32 pK = font1[prevIdx].kerningindex;
+            s32 cK = font1[curIdx].kerningindex;
+            if (pK < 0 || pK >= 13) pK = 0;
+            if (cK < 0 || cK >= 13) cK = 0;
+
+            tmp = font2->kerning[pK * 13 + cK] + text_spacing - 1;
+            *textwidth = font1[curIdx].width + *textwidth - tmp;
 
             prevchar = *text;
             text++;
         }
-        else if (*text < 0xC0)
+        else if ((unsigned char)*text < 0x21)
         {
-            // Multi-byte character
+            text++;
+        }
+        else if ((unsigned char)*text < 0xC0)
+        {
             tmp = font2->kerning[0] + text_spacing - 1;
             *textwidth = *textwidth - tmp + 11;
             text += 2;
         }
         else
         {
-            // Multi-byte character
             tmp = font2->kerning[0] + text_spacing - 1;
             *textwidth = *textwidth - tmp + 15;
             text += 2;
         }
-    };
+    }
     
     if (*textwidth < longest)
     {
         *textwidth = longest;
     }
+
+    *textheight += lineheight;
 }
 
 void textWrap(s32 wrapwidth, char *src, char *dst, struct fontchar *chars, struct font *font)

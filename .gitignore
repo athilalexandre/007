@@ -112,3 +112,13 @@ assets/obseg/em/data/under.seg
 scripts/local/
 scripts/make/local/
 scripts/__pycache__/generate_prop_model_c.cpython-310.pyc
+
+# ROM files explicit ignore
+*.z64
+*.v64
+*.n64
+*.rom
+assets/ramrom/*.z64
+assets/ramrom/*.v64
+assets/ramrom/*.n64
+assets/ramrom/*.rom

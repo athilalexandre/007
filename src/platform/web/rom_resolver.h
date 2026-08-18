@@ -35,4 +35,5 @@ size_t rom_resolver_get_entry_count(void);
 #define ROM_OFFSET_INSTRUMENTSTBL      0x3B8830
 #define ROM_OFFSET_MUSICSAMPLETBL      0x419790
 
+u32 rom_resolver_get_resource_size(s32 index);
 #endif /* _ROM_RESOLVER_H_ */

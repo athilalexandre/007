@@ -5674,18 +5674,44 @@ void modelResetAnimationsScratchBuffer(void)
 }
 
 
+#ifdef TARGET_WEB
+#define PROMOTE(var) do { \
+    if (var) { \
+        u32 val = (u32)(var); \
+        if (val > 0x01000000 && (val & 0xFF) == 0x05) { \
+            val = __builtin_bswap32(val); \
+        } \
+        if (val >= (u32)(vma) && val < (u32)((vma) + 0x01000000)) { \
+            var = (void *)(val + diff); \
+        } \
+    } \
+} while (0)
+#else
 #define PROMOTE(var) \
     if (var) \
         var = (void *)((u32)var + diff)
+#endif
 
 void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr)
 {
     s32 diff = fileramaddr - vma;
     s32 i;
+    int safety = 0;
 
-    while (node)
+    while (node && safety++ < 1000)
     {
+#ifdef TARGET_WEB
+        if ((node->Opcode & 0xFF) == 0 && (node->Opcode >> 8) != 0) {
+            node->Opcode = __builtin_bswap16(node->Opcode);
+        }
+#endif
         u32 type = node->Opcode & 0xff;
+
+        PROMOTE(node->Data);
+        PROMOTE(node->Parent);
+        PROMOTE(node->Next);
+        PROMOTE(node->Prev);
+        PROMOTE(node->Child);
 
         PROMOTE(node->Data);
         PROMOTE(node->Parent);

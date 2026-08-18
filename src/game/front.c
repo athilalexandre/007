@@ -981,49 +981,18 @@ Gfx *constructor_menu19_spectrum(Gfx *DL);
 void disable_all_switches(Model *arg0);
 void set_item_visibility_in_objinstance(Model* objinstance, s32 item, s32 mode);
 void set_cursor_to_stage_solo(LEVEL_SOLO_SEQUENCE level);
-Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *arg5, s32 arg6, s32 arg7);
 void setCursorPOSforMode(int mode);
-void set_cursor_pos_difficulty(int difficulty);
+void set_cursor_pos_difficulty(s32 pos);
 
-// end forward declarations.
-
-
-Gfx *frontPrintText(Gfx *gdl, s32 *x, s32 *y, s8 *text, s32 second_font_table, s32 first_font_table, s32 arg6, s32 view_x, s32 view_y, s32 arg9, s32 arga)
+Gfx *frontPrintText(Gfx *dl, s32 *x, s32 *y, void *text, struct fontchar *chars, struct font *font, u32 colour, s32 width, s32 height, u32 yOffset, s32 lineheight)
 {
-    if (j_text_trigger != 0)
-    {
-        gdl = textRenderOutlined(
-            gdl,
-            x,
-            y,
-            text,
-            second_font_table,
-            first_font_table,
-            arg6,
-            (textglowR.r << 0x18) | (textglowG.r << 0x10) | (textglowB.r << 8) | textglowA.r,
-            view_x,
-            view_y,
-            arg9,
-            arga);
+    if (!chars || !font) {
+        chars = ptrFontZurichBoldChars;
+        font = ptrFontZurichBold;
     }
-    else
-    {
-        gdl = textRender(
-            gdl,
-            x,
-            y,
-            text,
-            second_font_table,
-            first_font_table,
-            arg6,
-            view_x,
-            view_y,
-            arg9,
-            arga);
-    }
-
-    return gdl;
+    return textRender(dl, x, y, (char *)text, chars, font, colour, width, height, yOffset, lineheight);
 }
+Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *text, struct fontchar *chars, struct font *font);
 
 
 s32 frontCheckIfCheatIsUnlocked(s32 cheat)
@@ -1504,20 +1473,24 @@ void interface_menu00_legalscreen(void)
 /**
  * Render a string of standard text on the legal screen e.g. "TWYCROSS BOARD OF GAME CLASSIFICATION"
  */
-Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *text, s32 arg6, s32 arg7)
+Gfx *display_aligned_white_text_to_screen(Gfx *dl, s32 arg1, s32 arg2, s32 halign, s32 valign, u8 *text, struct fontchar *chars, struct font *font)
 {
-    s32 sp4C;
-    s32 sp48;
+    s32 sp4C = 0;
+    s32 sp48 = 0;
     s32 x;
     s32 y;
 
-    sp48 = 0;
-    sp4C = 0;
-    textMeasure(&sp4C, &sp48, text, ptrFontZurichBoldChars, ptrFontZurichBold, 0);
+    if (!chars || !font) {
+        chars = ptrFontZurichBoldChars;
+        font = ptrFontZurichBold;
+    }
+
+    textMeasure(&sp4C, &sp48, (char *)text, chars, font, 0);
     x = arg1 - ((s32) (halign * sp48) / 2);
     y = arg2 - ((s32) (valign * sp4C) / 2);
 
-    return textRender(dl, &x, &y, text, arg6, arg7, -1, viGetX(), viGetY(), 0, 0);
+    
+    return textRender(dl, &x, &y, text, chars, font, 0xFFFFFFFF, viGetX(), viGetY(), 0, 0);
 }
 
 
@@ -1536,7 +1509,7 @@ Gfx *constructor_menu00_legalscreen(Gfx *DL)
     
     DL = clear_framebuffer_black(DL);
     
-    matrix_4x4_set_lookat_target(&lookatmtx, 0.0f, 0.0f, 4000.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, legal_text_ptr->v_pos * 0.0f);
+    matrix_4x4_set_lookat_target(&lookatmtx, 0.0f, 0.0f, 4000.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
     
     renderdata.basemtx = &lookatmtx;
     renderdata.mtxlist = (Mtxf *) dynAllocate(logoinst->obj->numMatrices << 6);
@@ -1564,11 +1537,11 @@ Gfx *constructor_menu00_legalscreen(Gfx *DL)
     DL = microcode_constructor(DL);
     
     legal_text_ptr = legalpage_text_array;
-    legal_text_end = (struct legal_screen_text *)&legalscreen_MRD;
+    legal_text_end = legalpage_text_array + (sizeof(legalpage_text_array) / sizeof(legalpage_text_array[0]));
     
     do
     {
-        DL = display_aligned_white_text_to_screen(DL, legal_text_ptr->h_pos, legal_text_ptr->v_pos, legal_text_ptr->halign, legal_text_ptr->valign, langGet(legal_text_ptr->txtID), ptrFontZurichBoldChars, ptrFontZurichBold);
+        DL = display_aligned_white_text_to_screen(DL, legal_text_ptr->h_pos, legal_text_ptr->v_pos, legal_text_ptr->halign, legal_text_ptr->valign, (u8 *)langGet(legal_text_ptr->txtID), ptrFontZurichBoldChars, ptrFontZurichBold);
         legal_text_ptr++;
     }
     while (legal_text_ptr < legal_text_end);
