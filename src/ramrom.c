@@ -31,7 +31,7 @@ void romCreateMesgQueue(void)
 void doRomCopy(void *target, void *source, u32 size)
 {
     osInvalDCache(target, size);
-    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_READ, source, target, size, &memoryMesgQueue);
+    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_READ, (u32)(uintptr_t)source, target, size, &memoryMesgQueue);
 }
 
 /**
@@ -69,10 +69,10 @@ s32 romCopyAligned(void *target, void *source, s32 length)
     s32 *source_aligned;
     s32 *source_offset;
 
-    source_aligned = align_addr_even((s32)source);
-    source_offset = (s32)source - (s32)source_aligned;
-    target_aligned = ALIGN16_a((s32)target);
-    target_offset = source_offset;
+    source_aligned = (s32 *)(uintptr_t)align_addr_even((s32)(uintptr_t)source);
+    source_offset = (s32 *)((uintptr_t)source - (uintptr_t)source_aligned);
+    target_aligned = (s32 *)(uintptr_t)ALIGN16_a((s32)(uintptr_t)target);
+    target_offset = (uintptr_t)source_offset;
     romCopy(target_aligned, source_aligned, ALIGN16_a((s32)source_offset + length));
     return ((s32)target_aligned + target_offset);
 }
@@ -85,7 +85,7 @@ s32 romCopyAligned(void *target, void *source, s32 length)
 void doRomWrite(void *source, void *target, u32 size)
 {
     osWritebackDCache(source, size);
-    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_WRITE, target, source, size, &memoryMesgQueue);
+    osPiStartDma(&memoryMesgMB, OS_MESG_PRI_NORMAL, OS_WRITE, (u32)(uintptr_t)target, source, size, &memoryMesgQueue);
 }
 
 /**

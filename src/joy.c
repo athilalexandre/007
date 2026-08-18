@@ -1,3 +1,4 @@
+#include "deb.h"
 #include <ultra64.h>
 #include "joy.h"
 #include <PR/os.h>

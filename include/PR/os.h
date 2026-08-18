@@ -980,9 +980,11 @@ extern void		osAckRamromWrite(void);
 
 /* byte string operations */
 
+#ifndef TARGET_WEB
 extern void     bcopy(const void *, void *, int);
 extern int      bcmp(const void *, const void *, int);
 extern void     bzero(void *, int);
+#endif
 
 /* Miscellaneous operations */
 

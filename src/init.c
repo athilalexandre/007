@@ -1,3 +1,4 @@
+#ifndef TARGET_WEB
 #include <ultra64.h>
 #include <PR/R4300.h>
 #include <PR/os.h>
@@ -302,3 +303,5 @@ void initDebugHandlerTable(void)
         p++;
     } while (p->address != NULL);
 }
+
+#endif /* TARGET_WEB */

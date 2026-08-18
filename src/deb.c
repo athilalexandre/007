@@ -64,7 +64,7 @@ u8 *debAllocate(s32 size) {
 
     return prev;
 #else
-    return &g_DebBuffer;
+    return (u8 *)g_DebBuffer;
 #endif
 }
 

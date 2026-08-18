@@ -146,7 +146,7 @@ typedef struct bg_room_data
 typedef struct s_specialportal
 {
     u8 levelid;
-    u8 portallist[];
+    u8 portallist[15];
 } s_specialportal;
 
 typedef struct unk_portalstruct

@@ -1,3 +1,4 @@
+#ifndef TARGET_WEB
 /***************************************************************
                             usb.c
                                
@@ -1460,3 +1461,5 @@ static void usb_sc64_read(void)
     // Set up DMA transfer between RDRAM and the PI
     usb_dma_read(usb_buffer, SC64_BASE + DEBUG_ADDRESS + usb_readblock, BUFFER_SIZE);
 }
+
+#endif /* TARGET_WEB */

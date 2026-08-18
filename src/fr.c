@@ -1,4 +1,6 @@
 #include <ultra64.h>
+extern void currentPlayerSetProjectionMatrix(Mtx *m);
+extern void currentPlayerSetProjectionMatrixF(f32 m[4][4]);
 #include "vi.h"
 #include "fr.h"
 #include <bondgame.h>
@@ -455,11 +457,11 @@ void video_related_8(void)
 
     if (g_viColorOutputMode != COLORMODE_32BIT)
     {
-        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = g_ViBackData->framebuf;
+        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = (u32)(uintptr_t)g_ViBackData->framebuf;
     }
     else
     {
-        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = cfb_16[0];
+        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = (u32)(uintptr_t)cfb_16[0];
     }
 
     settings = g_ViBackData;
@@ -599,11 +601,11 @@ void video_related_8(void)
 
     if (g_viColorOutputMode != (g_viColorOutputMode * 0))
     {
-        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = g_ViBackData->framebuf;
+        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = (u32)(uintptr_t)g_ViBackData->framebuf;
     }
     else
     {
-        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = cfb_16[0];
+        ((struct GfxInfo_s *)g_gfxTaskSettingsList)->cfb = (u32)(uintptr_t)cfb_16[0];
     }
 
     settings = g_ViBackData;

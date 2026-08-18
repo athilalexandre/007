@@ -1740,7 +1740,7 @@ typedef struct {
  */
 typedef union {
 	Gwords		words;
-#if !defined(F3D_OLD) && IS_BIG_ENDIAN && !IS_64_BIT
+#if (!defined(F3D_OLD) && IS_BIG_ENDIAN && !IS_64_BIT) || defined(TARGET_WEB)
 	Gdma		dma;
 	Gtri		tri;
 	Gline3D		line;

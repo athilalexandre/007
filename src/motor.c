@@ -1,3 +1,5 @@
+extern void __osSiGetAccess(void);
+extern void __osSiRelAccess(void);
 #include <ultra64.h>
 #include "libultra/io/controller.h"
 

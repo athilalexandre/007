@@ -11,7 +11,7 @@
 #include <macro.h>
 
 #ifndef DEBUG
-    #define osSyncPrintf()
+    #define osSyncPrintf(...)
 #endif
 
 //i belong in a header, probably to another file

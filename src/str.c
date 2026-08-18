@@ -1,3 +1,4 @@
+#ifndef TARGET_WEB
 #include "str.h"
 
 char *strcpy(char *dst, const char *src) {
@@ -171,3 +172,5 @@ long int strtol(const char *str, char **endptr, int base) {
     }
     return 0;
 }
+
+#endif /* TARGET_WEB */

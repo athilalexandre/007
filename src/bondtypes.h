@@ -27,9 +27,7 @@
 #include <ultra64.h>
 #include <bondconstants.h>
 #include "snd.h"
-#ifndef AIPARSE
-    #include "game/chrobjdata.h"
-#endif
+/* chrobjdata.h included below after ItemModelFileRecord */
 
         /**
  * Syntax Sugar for clarification of intent
@@ -245,20 +243,17 @@ typedef union
             f32 f[3];
         };
     } coord3d;
-#define New_Coord3d(x, y, z)            \
-    {                                   \
-        IF_ELSE(IS_EMPTY(x))            \
-        (0)(x),                         \
-            IF_ELSE(IS_EMPTY(y))(0)(y), \
-            IF_ELSE(IS_EMPTY(z))(0)(z)  \
-    }
+#ifndef __sgi
+#define New_Coord3d(...) {0, 0, 0}
+#else
+#define New_Coord3d(x, y, z) { IF_ELSE(IS_EMPTY(x))(0)(x), IF_ELSE(IS_EMPTY(y))(0)(y), IF_ELSE(IS_EMPTY(z))(0)(z) }
+#endif
     typedef coord3d vec3d; //canononical name
-#define New_Vector(x, y, z)        \
-    {                              \
-        IF_ELSE(IS_EMPTY(x))(0)(x),\
-        IF_ELSE(IS_EMPTY(y))(0)(y),\
-        IF_ELSE(IS_EMPTY(z))(0)(z) \
-    }
+#ifndef __sgi
+#define New_Vector(...) {0, 0, 0}
+#else
+#define New_Vector(x, y, z) { IF_ELSE(IS_EMPTY(x))(0)(x), IF_ELSE(IS_EMPTY(y))(0)(y), IF_ELSE(IS_EMPTY(z))(0)(z) }
+#endif
 
     /**
      16bit Co-Ordinate used for Integer co-ordinates eg, pumping straight to RSP.
@@ -1420,6 +1415,10 @@ typedef union
             char           **SwitchNames;
 #endif
         } ChrModelFileRecord;
+#ifndef AIPARSE
+#include "game/chrobjdata.h"
+#endif
+
         /*
         typedef struct GunModelFileRecord
         {
@@ -3098,7 +3097,11 @@ typedef union
     typedef struct CCTVRecord
     {
         inherits ObjectRecord;
+#ifndef __sgi
+        s32      lookpad; // lookpad
+#else
         s32      pad; // lookpad
+#endif
         Mtxf     unk84;
         f32 unkC4;
         f32 unkC8;

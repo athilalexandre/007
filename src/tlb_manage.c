@@ -1,4 +1,5 @@
 #include <ultra64.h>
+extern u32 __osGetTLBHi(s32 index);
 #include "ramrom.h"
 #include "tlb_manage.h"
 #include "tlb_random.h"

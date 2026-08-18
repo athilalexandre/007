@@ -1,3 +1,4 @@
+#include <ramrom.h>
 #include <ultra64.h>
 #include "macro.h"
 #include "ob.h"
@@ -149,7 +150,7 @@ void obLoadBGFileBytesAtOffset(u8 *bgname, u8 *target, s32 offset, s32 len)
     {
       while (1){};
     }
-    romCopy(target, &fileentry->hw_address[offset], len, fileentry);
+    romCopy(target, &fileentry->hw_address[offset], len);
   }
 
 }
@@ -202,7 +203,7 @@ void obLoadBGFileBytesAtOffset(u8 *bgname, u8 *target, s32 offset, s32 len)
     {
       while (1){};
     }
-    romCopy(target, &fileentry->hw_address[offset], len, fileentry);
+    romCopy(target, &fileentry->hw_address[offset], len);
   }
 
 }

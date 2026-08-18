@@ -247,11 +247,11 @@
 #define AI_LIST_OBJ_START 0x1000
 
 // Print Helpful Compile-time error messages
-#if defined(__INTELLISENSE__)
+#if defined(__INTELLISENSE__) || !defined(__sgi)
 #    define AI_ERR_SUB (GAILIST_DEAD_AI)
 #    define AI_ERR_NOTSUB (GAILIST_DEAD_AI)
 #    define AI_ERR_NOTCHR (GAILIST_DEAD_AI)
-#    define AI_ERR_NO_THIS 1
+#    define AI_ERR_NO_THIS (SetReturnAiList(0) SetChrAiList(CHR_SELF, (!isBGAIListID(AI_LIST_ID) && isSubroutine(AI_LIST_ID) ? AI_LIST_ID : AI_ERR_NOTSUB)))
 #else
 #    define AI_ERR_SUB (('E','R','R','O','R',':',' ','A','I','_','L','I','S','T',' ','I','S',' ','A',' ','S','U','B','R','O','U','T','I','N','E',' ','O','R',' ','N','O','T',' ','F','O','R',' ','C','H','R'), 1)
 #    define AI_ERR_NOTSUB (('E','R','R','O','R',':',' ','A','I','_','L','I','S','T',' ','N','O','T',' ','A',' ','S','U','B','R','O','U','T','I','N','E',' ','O','R',' ','N','O','T',' ','F','O','R',' ','C','H','R'), 1)
@@ -272,17 +272,22 @@
  * eg
  * #define SETUPSUBROUTINES(ID) (ID == ACTIVATE_OBJECT) |\
  */
-#define isSubroutine(ID) ((ID == GAILIST_PLAY_IDLE_ANIMATION) |\
-                            (ID == GAILIST_BASH_KEYBOARD) | \
-                            (ID == GAILIST_ATTACK_BOND) | \
-                            (ID == GAILIST_RUN_TO_BOND) | \
-                            (ID == GAILIST_STARTLE_AND_RUN_TO_BOND) | \
-                            (ID == GAILIST_WAIT_ONE_SECOND) \
-                            IF(NOT(DEFINED(SETUPSUBROUTINES(ID))))\
-                            (\
-                                | SETUPSUBROUTINES(ID)\
-                            ))\
-
+#ifdef SETUPSUBROUTINES
+#define isSubroutine(ID) ((ID == GAILIST_PLAY_IDLE_ANIMATION) || \
+                          (ID == GAILIST_BASH_KEYBOARD) || \
+                          (ID == GAILIST_ATTACK_BOND) || \
+                          (ID == GAILIST_RUN_TO_BOND) || \
+                          (ID == GAILIST_STARTLE_AND_RUN_TO_BOND) || \
+                          (ID == GAILIST_WAIT_ONE_SECOND) || \
+                          SETUPSUBROUTINES(ID))
+#else
+#define isSubroutine(ID) ((ID == GAILIST_PLAY_IDLE_ANIMATION) || \
+                          (ID == GAILIST_BASH_KEYBOARD) || \
+                          (ID == GAILIST_ATTACK_BOND) || \
+                          (ID == GAILIST_RUN_TO_BOND) || \
+                          (ID == GAILIST_STARTLE_AND_RUN_TO_BOND) || \
+                          (ID == GAILIST_WAIT_ONE_SECOND))
+#endif
 
 typedef enum GAILISTID
 {
@@ -4510,3 +4515,10 @@ IF_VA(NOT(IS_EMPTY(CASE_VAL0)))(IF_VA(NOT(IS_EMPTY(CASE_VAL1)))(BREAK(FAIL_LBL) 
 #endif
 
 
+
+#ifndef THIS
+#define THIS 0
+#endif
+#undef CALL
+#define CALL(AI_LIST_ID) \
+    SetReturnAiList(THIS) SetChrAiList(CHR_SELF, (!isBGAIListID(AI_LIST_ID) && isSubroutine(AI_LIST_ID) ? AI_LIST_ID : AI_ERR_NOTSUB))

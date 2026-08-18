@@ -1,4 +1,7 @@
 #include <ultra64.h>
+extern OSThread *__osGetCurrFaultedThread(void);
+extern void __osEnqueueThread(OSThread **, OSThread *);
+extern OSThread *__osRunQueue;
 #include <PR/os.h>
 #include <bondgame.h>
 #include "fr.h"
@@ -610,7 +613,7 @@ s32 crashIndyScanLoadResourceIdFromBuffer(u32 arg0)
 	u32 prev = 0x00e00004;
 
 	while (TRUE) {
-		u32 next = crashIndyFileGetAddressSubsequentData(this);
+		u32 next = (u32)(uintptr_t)crashIndyFileGetAddressSubsequentData((u8 *)(uintptr_t)this);
 
 		if (arg0 >= (u32)g_indyCurrentReadBufferResourceId) {
 			prev = this;
@@ -625,7 +628,7 @@ s32 crashIndyScanLoadResourceIdFromBuffer(u32 arg0)
 		}
 	}
 
-	crashIndyFileGetAddressSubsequentData(prev);
+	crashIndyFileGetAddressSubsequentData((u8 *)(uintptr_t)prev);
 
 	return TRUE;
 }
@@ -728,8 +731,8 @@ u32 * crashIndyGetReadBufferResourceId(void)
  */
 void * crashGetStackEnd(u32 sp, u32 tid)
 {
-    void *localStackPointers1[STACK_POINTER_COUNT] = g_StackPtrs1;
-    void *localStackPointers2[STACK_POINTER_COUNT] = g_StackPtrs2;
+    void **localStackPointers1 = g_StackPtrs1;
+    void **localStackPointers2 = g_StackPtrs2;
     void *p2;
     void *p1;
 
@@ -766,7 +769,7 @@ void * crashGetStackEnd(u32 sp, u32 tid)
  */
 void * crashGetStackStart(u32 sp, u32 tid)
 {
-    void *localStackPointers3[STACK_POINTER_COUNT] = g_StackPtrs3;
+    void **localStackPointers3 = g_StackPtrs3;
     void *p;
 
     if ((s32)tid <= (s32)0 || (u32)tid > (u32)STACK_POINTER_COUNT)
@@ -1003,7 +1006,7 @@ void crashSetBuffers(u16 *buffer1, u16 *buffer2)
  */
 void crashInitBuffers(void)
 {
-    crashSetBuffers(&cfb_16[0], &cfb_16[1]);
+    crashSetBuffers((u16 *)cfb_16[0], (u16 *)cfb_16[1]);
 }
 
 /**

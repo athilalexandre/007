@@ -1,0 +1,64 @@
+# ==============================================================================
+# GoldenEye 007 (N64) WebAssembly Port Makefile
+# Target: Web / WebAssembly (Clean Upstream Baseline)
+# Compiler: Emscripten (emcc 6.0.7 / LLVM 21.0.0)
+# ==============================================================================
+
+CC := emcc
+BUILD_DIR := build/web
+TARGET_WASM := $(BUILD_DIR)/goldeneye007.wasm
+TARGET_JS := $(BUILD_DIR)/goldeneye007.js
+TARGET_MAP := $(BUILD_DIR)/goldeneye007.map
+
+# Include Directories
+INCLUDES := -I . -I include -I include/PR -I src -I src/game -I src/inflate -I src/platform/web -I assets -include deb.h
+
+# C Flags
+CFLAGS := -D_LANGUAGE_C -DTARGET_WEB -DVERSION_US -DLANG_US -DREFRESH_NTSC \
+          -DLEFTOVERDEBUG -DLEFTOVERSPECTRUM -DBUGFIX_R0 \
+          -fms-extensions -Wno-microsoft-anon-tag -fno-builtin \
+          -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=incompatible-pointer-types \
+          -O2 -Wno-macro-redefined -Wno-invalid-token-paste -Wno-comment $(INCLUDES)
+
+# Core and Game Sources
+RAW_SOURCES := \
+    $(wildcard src/*.c) \
+    $(wildcard src/game/*.c) \
+    $(wildcard src/inflate/*.c) \
+    $(wildcard src/platform/web/*.c) \
+    $(wildcard assets/*.c)
+
+SOURCES := $(filter-out src/sprintf.c,$(RAW_SOURCES))
+OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SOURCES))
+
+# Linker Flags (Exported Web Adapter APIs)
+LDFLAGS := -s WASM=1 -g \
+           -s ALLOW_MEMORY_GROWTH=1 \
+           -s INITIAL_MEMORY=67108864 \
+           -s MAXIMUM_MEMORY=268435456 \
+           -s EXPORTED_FUNCTIONS="['_hal_engine_init','_hal_engine_step','_hal_engine_is_initialized','_hal_os_set_rom_data','_hal_os_get_rom_status','_hal_gfx_get_framebuffer','_hal_gfx_get_frame_count','_hal_input_set_buttons','_hal_get_build_info','_malloc','_free']" \
+           -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','HEAPU8','HEAP16','HEAPU16','HEAP32']" \
+           -s ENVIRONMENT=web,worker,node \
+           -s MODULARIZE=1 \
+           -s EXPORT_NAME='GoldenEyeModule' \
+           -s EMULATE_FUNCTION_POINTER_CASTS=1 \
+           -s NO_EXIT_RUNTIME=1 \
+           -s ASSERTIONS=1 \
+           -Wl,-Map=$(TARGET_MAP) -Wl,--error-limit=0 \
+           -Wno-incompatible-pointer-types
+
+all: $(TARGET_JS)
+
+$(TARGET_JS): $(OBJECTS)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
+	@echo "GoldenEye 007 WebAssembly Build Complete: $@"
+
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(BUILD_DIR)
+
+.PHONY: all clean

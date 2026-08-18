@@ -1,3 +1,4 @@
+#ifndef TARGET_WEB
 /*
  * THIS FILE IS AN OS FILE (PR\libultra\rmon\rmonMain.c)
  */
@@ -348,3 +349,5 @@ void rmonHandlePrintfMsg(struct RmonMesgPrintf *msg)
     usb_write_text(msg->buffer, msg->length);
 }
 #endif
+
+#endif /* TARGET_WEB */

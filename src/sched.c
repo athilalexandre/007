@@ -1,3 +1,4 @@
+#ifndef TARGET_WEB
 #include <ultra64.h>
 #include <PR/os.h>
 #include "init.h"
@@ -618,3 +619,5 @@ s32 __scSchedule(OSSched *sc, OSScTask **sp, OSScTask **dp, s32 availRCP)
     return avail;
     
 }
+
+#endif /* TARGET_WEB */

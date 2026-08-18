@@ -2,7 +2,7 @@
 #define _STR_H_
 
 #include <ultra64.h>
-/*#include <stddef.h>*/
+#include <stddef.h>
 
 char *strcpy(char *dst, const char *src);
 char *strncpy(char *dst, const char *src, size_t n);

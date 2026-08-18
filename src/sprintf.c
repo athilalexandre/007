@@ -1,3 +1,4 @@
+#ifndef TARGET_WEB
 #include <stdarg.h>
 #include <ultra64.h>
 /*#include <stddef.h>*/
@@ -22,3 +23,5 @@ int sprintf(char *dst, const char *fmt, ...) {
 
 
 
+
+#endif /* TARGET_WEB */
