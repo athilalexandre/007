@@ -87,7 +87,40 @@ typedef union {
 } GFXMsg;
 
 // forward declarations
+// forward declarations
 void bossMainloop(void);
+void debInit(void);
+void romCreateMesgQueue(void);
+void tlbmanageEstablishManagementTable(void);
+void image_entries_load(void);
+void mempInit(void);
+void memaInit(void);
+void bgInit(void);
+void viInit(void);
+void viInitVideoSettings(void);
+s32 indycommInit(void);
+void speedgraphInit(void);
+void obInit(void);
+void rspInit(void);
+void dynInit(void);
+void joyInit(void);
+void stanInit(void);
+void gameInit(void);
+void initGameData(void);
+void casingsInit(void);
+void alloc_load_expand_ani_table(void);
+void clear_ramrom_block_buffer_heading_ptrs(void);
+void null_init_main_1(void);
+void null_init_main_2(void);
+void null_init_main_3(void);
+void langInit(void);
+void store_osgetcount(void);
+void reset_counter_rand_body_head(void);
+void init_weapon_animation_groups_maybe(void);
+void fileResetRamRomSave(void);
+void init_player_gait_object(void);
+void default_player_perspective_and_height(void);
+void set_gu_scale(void);
 
 /* data */
 u32 g_BossDebugNoticeEntry = 0;

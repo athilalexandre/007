@@ -359,8 +359,7 @@ void amCreateAudioManager(ALSynConfig* alconf)
 
     if (alconf->fxType == AL_FX_CUSTOM)
     {
-        s32 sp48[CUSTOM_FX_SECTION_COUNT * CUSTOM_FX_SECTION_SIZE + 2] = CUSTOM_FX_PARAMS_N;
-        alconf->params = sp48;
+        alconf->params = CUSTOM_FX_PARAMS_N;
         alInit(&g_AudioManager.g, alconf);
     }
     else

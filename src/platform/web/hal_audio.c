@@ -1,13 +1,11 @@
 #include <ultra64.h>
+#include <PR/libaudio.h>
 
-void alInit(void *drvr, void *c, void *config) {
+void alInit(ALGlobals *glob, ALSynConfig *c) {
 }
 
-void alClose(void *drvr) {
+void alClose(ALGlobals *glob) {
 }
 
-void alBnkfNew(void *bank, u8 *table) {
-}
-
-void musicSeqFileNew(void *seqFile, u8 *table) {
+void alBnkfNew(ALBankFile *f, u8 *table) {
 }

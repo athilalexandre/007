@@ -46,8 +46,12 @@ s32 sub_GAME_7F0D37DC(u32 cycles, u8 specA, u8 port, u8 value);
 
 // data
 s8 D_8004EC30 = 0x0;
+#ifdef __sgi
 extern u8 spec_keyboard_row_caps_z_x_c_v;
 #pragma weak spec_keyboard_row_caps_z_x_c_v = spec_keyboard_buffer
+#else
+#define spec_keyboard_row_caps_z_x_c_v (spec_keyboard_buffer[0])
+#endif
 u8 spec_keyboard_buffer[] = 
 {
     0xFF, 0xFF, 0xFF, 0xFF,
@@ -1003,7 +1007,7 @@ void spectrum_hw_emulation(void)
             * instruction is fetched from the location designated by
             * the new contents of the PC. The jump is measured from the
             * address of the instruction op code and contains a range of
-            * –126 to +129 bytes. The assembler automatically adjusts for
+            * â€“126 to +129 bytes. The assembler automatically adjusts for
             * the twice incremented PC. If the result of decrementing leaves
             * B with a zero value, the next instruction executed is taken
             * from the location following this instruction.
@@ -1152,7 +1156,7 @@ void spectrum_hw_emulation(void)
             * added to PC and the next instruction is fetched from the location
             * designated by the new contents of the PC. This jump is measured
             * from the address of the instruction op code and contains a range
-            * of –126 to +129 bytes. The assembler automatically adjusts for
+            * of â€“126 to +129 bytes. The assembler automatically adjusts for
             * the twice incremented PC.
             */
             case SPEC_HEX_OP_JR_NN: // 0x18
@@ -1307,7 +1311,7 @@ void spectrum_hw_emulation(void)
             * E is added to PC and the next instruction is fetched from the
             * location designated by the new contents of the PC. The jump is
             * measured from the address of the instruction op code and contains
-            * a range of –126 to +129 bytes. The assembler automatically adjusts
+            * a range of â€“126 to +129 bytes. The assembler automatically adjusts
             * for the twice incremented PC.
             */
             case SPEC_HEX_OP_JR_NZ_NN: // 0x20
@@ -1614,7 +1618,7 @@ void spectrum_hw_emulation(void)
             * E is added to PC and the next instruction is fetched from the
             * location designated by the new contents of the PC. The jump is
             * measured from the address of the instruction op code and contains
-            * a range of –126 to +129 bytes. The assembler automatically adjusts
+            * a range of â€“126 to +129 bytes. The assembler automatically adjusts
             * for the twice incremented PC.
             */
             case SPEC_HEX_OP_JR_Z_NN: // 0x28
@@ -1879,7 +1883,7 @@ void spectrum_hw_emulation(void)
             * E is added to PC and the next instruction is fetched from the
             * location designated by the new contents of the PC. The jump is
             * measured from the address of the instruction op code and contains
-            * a range of –126 to +129 bytes. The assembler automatically adjusts
+            * a range of â€“126 to +129 bytes. The assembler automatically adjusts
             * for the twice incremented PC.
             */
             case SPEC_HEX_OP_JR_NC_NN: // 0x30
@@ -2073,7 +2077,7 @@ void spectrum_hw_emulation(void)
             * E is added to PC and the next instruction is fetched from the
             * location designated by the new contents of the PC. The jump is
             * measured from the address of the instruction op code and contains
-            * a range of –126 to +129 bytes. The assembler automatically adjusts
+            * a range of â€“126 to +129 bytes. The assembler automatically adjusts
             * for the twice incremented PC.
             */
             case SPEC_HEX_OP_JR_C_NN: // 0x38

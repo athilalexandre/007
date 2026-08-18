@@ -5,18 +5,21 @@
 #include "mema.h"
 
 extern void bossInitMainthreadData(void);
-extern void hal_os_set_rom_data(const u8 *data, u32 size);
+extern void hal_os_set_rom_data(const u8 *data, size_t size);
 extern u32 hal_os_get_rom_status(void);
 extern void hal_gfx_init(void);
 
 static u32 s_EngineInitialized = 0;
 
-void hal_engine_init(void) {
-    if (!s_EngineInitialized) {
-        hal_gfx_init();
+int hal_engine_init(void) {
+    hal_gfx_init();
+    if (hal_os_get_rom_status() == 1) {
         bossInitMainthreadData();
         s_EngineInitialized = 1;
+    } else {
+        s_EngineInitialized = 1;
     }
+    return s_EngineInitialized;
 }
 
 u32 hal_engine_is_initialized(void) {
