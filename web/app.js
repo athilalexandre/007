@@ -1,12 +1,13 @@
 /**
- * GoldenEye 007 Web Application Controller
+ * GoldenEye 007 Web Application Controller & Diagnostic System
  * 
  * Orchestrates:
- * - Local ROM Ingestion & Verification
- * - WebAssembly Engine Lifecycle
- * - WebGL 2.0 Fast3D Renderer
+ * - Local ROM Ingestion & SHA-1 Verification
+ * - WebAssembly Engine Lifecycle & Telemetry
+ * - WebGL 2.0 Fast3D Renderer with Upright Mapping
+ * - Real-Time On-Screen & Console Diagnostic Logging
  * - Host-Authoritative 2P Co-op & 16P Online Multiplayer
- * - FPS Keyboard/Mouse & Gamepad input
+ * - FPS Keyboard/Mouse & Gamepad Input
  */
 
 const EXPECTED_SHA1 = 'abe01e4aeb033b6c0836819f549c791b26cfde83';
@@ -80,6 +81,8 @@ class GoldenEyeApp {
         this.currentStage = 1;
         this.isRunning = false;
         this.selectedCharacter = 'bond';
+        this.activeFilter = 'ALL';
+        this.logs = [];
 
         // Renderer
         this.canvas = document.getElementById('gameCanvas');
@@ -93,34 +96,128 @@ class GoldenEyeApp {
         this.mouse = { x: 0, y: 0, lookX: 0, lookY: 0, isLocked: false };
         this.buttons = 0;
 
+        // Frame timing & diagnostics
+        this.frameCount = 0;
+        this.lastDiagTime = performance.now();
+
+        this.initDiagnostics();
         this.initUI();
         this.initNetplayEvents();
         this.initInputHandlers();
     }
 
+    initDiagnostics() {
+        // Intercept standard console output to mirror into the diagnostics terminal
+        const origLog = console.log;
+        const origWarn = console.warn;
+        const origErr = console.error;
+
+        console.log = (...args) => {
+            origLog.apply(console, args);
+            this.addLog('INFO', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        };
+
+        console.warn = (...args) => {
+            origWarn.apply(console, args);
+            this.addLog('WARN', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        };
+
+        console.error = (...args) => {
+            origErr.apply(console, args);
+            this.addLog('ERROR', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        };
+
+        window.addEventListener('error', (e) => {
+            this.addLog('ERROR', `Uncaught Exception: ${e.message} at ${e.filename}:${e.lineno}`);
+        });
+
+        window.addEventListener('unhandledrejection', (e) => {
+            this.addLog('ERROR', `Unhandled Promise Rejection: ${e.reason}`);
+        });
+    }
+
+    addLog(tag, message) {
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+        const entry = { time: timeStr, tag, message };
+        this.logs.push(entry);
+
+        if (this.logs.length > 500) {
+            this.logs.shift();
+        }
+
+        this.renderLogEntry(entry);
+    }
+
+    renderLogEntry(entry) {
+        const terminal = document.getElementById('debugTerminal');
+        if (!terminal) return;
+
+        if (this.activeFilter !== 'ALL') {
+            if (this.activeFilter === 'ENGINE' && entry.tag !== 'ENGINE') return;
+            if (this.activeFilter === 'GBI' && entry.tag !== 'GBI') return;
+            if (this.activeFilter === 'NET' && entry.tag !== 'NET') return;
+            if (this.activeFilter === 'ERR' && entry.tag !== 'ERROR' && entry.tag !== 'WARN') return;
+        }
+
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = `
+            <span class="log-time">[${entry.time}]</span>
+            <span class="log-tag ${entry.tag}">${entry.tag}</span>
+            <span class="log-msg">${escapeHtml(entry.message)}</span>
+        `;
+        terminal.appendChild(div);
+
+        // Auto-scroll
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    refreshTerminal() {
+        const terminal = document.getElementById('debugTerminal');
+        if (!terminal) return;
+        terminal.innerHTML = '';
+        for (const entry of this.logs) {
+            this.renderLogEntry(entry);
+        }
+    }
+
     async init() {
         try {
+            this.addLog('ENGINE', 'Initializing GoldenEye 007 WebAssembly Runtime...');
             this.showToast('Initializing GoldenEye 007 WebAssembly Engine...');
+
+            const moduleConfig = {
+                print: (text) => {
+                    this.addLog('ENGINE', text);
+                },
+                printErr: (text) => {
+                    this.addLog('ERROR', text);
+                }
+            };
+
             if (typeof GoldenEyeModule !== 'undefined') {
-                this.module = await GoldenEyeModule();
-                console.log('WebAssembly Runtime initialized:', this.module);
+                this.module = await GoldenEyeModule(moduleConfig);
+                this.addLog('ENGINE', 'WebAssembly Runtime initialized with 64MB memory heap.');
             } else {
-                console.warn('GoldenEyeModule not yet loaded, loading via script tag...');
+                this.addLog('WARN', 'GoldenEyeModule not yet in memory, dynamically injecting script tag...');
                 const script = document.createElement('script');
                 script.src = 'goldeneye007.js';
                 script.onload = async () => {
-                    this.module = await GoldenEyeModule();
-                    console.log('WebAssembly Runtime loaded and initialized.');
+                    this.module = await GoldenEyeModule(moduleConfig);
+                    this.addLog('ENGINE', 'WebAssembly Runtime loaded and initialized successfully.');
                 };
                 document.head.appendChild(script);
             }
 
             // Connect to signaling server
+            this.addLog('NET', 'Connecting to WebRTC & Matchmaking Signaling Server...');
             await this.netplay.connect();
+            this.addLog('NET', `Connected to Signaling Server as Client ID: ${this.netplay.clientId}`);
             this.showToast('Connected to Matchmaking & Signaling Server');
             this.netplay.listRooms();
         } catch (err) {
-            console.error('App initialization error:', err);
+            this.addLog('ERROR', `App initialization failed: ${err.message || err}`);
             this.showToast('Signaling server connecting in local mode.');
         }
     }
@@ -144,12 +241,37 @@ class GoldenEyeApp {
             });
         });
 
+        // Diagnostics filter chips
+        document.querySelectorAll('.filter-chip[data-filter]').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip[data-filter]').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                this.activeFilter = chip.getAttribute('data-filter');
+                this.refreshTerminal();
+            });
+        });
+
+        // Clear Logs
+        document.getElementById('btnClearLogs').addEventListener('click', () => {
+            this.logs = [];
+            this.refreshTerminal();
+        });
+
+        // Copy Logs
+        document.getElementById('btnCopyLogs').addEventListener('click', () => {
+            const fullLog = this.logs.map(l => `[${l.time}] [${l.tag}] ${l.message}`).join('\n');
+            navigator.clipboard.writeText(fullLog).then(() => {
+                this.showToast('Diagnostics logs copied to clipboard!');
+            });
+        });
+
         // Character Select Grid
         document.querySelectorAll('.char-card').forEach(card => {
             card.addEventListener('click', () => {
                 document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
                 this.selectedCharacter = card.getAttribute('data-char');
+                this.addLog('INFO', `Selected character codename: ${this.selectedCharacter}`);
             });
         });
 
@@ -194,6 +316,7 @@ class GoldenEyeApp {
             }
             const stage = parseInt(document.getElementById('coopStageSelect').value, 10) || 1;
             const name = document.getElementById('coopHostName').value || 'James Bond';
+            this.addLog('NET', `Creating 2-Player Co-op Room for Stage ${stage} (${STAGE_NAMES[stage]})...`);
             this.netplay.createRoom({
                 mode: 'coop',
                 stage: stage,
@@ -214,6 +337,7 @@ class GoldenEyeApp {
                 this.showToast('Please enter a 6-digit room code.');
                 return;
             }
+            this.addLog('NET', `Joining Co-op Room "${code}" as ${name}...`);
             this.netplay.joinRoom(code, { name, character: 'natalya' });
         });
 
@@ -226,6 +350,7 @@ class GoldenEyeApp {
             const stage = parseInt(document.getElementById('mpStageSelect').value, 10) || 23;
             const scenario = document.getElementById('mpScenarioSelect').value;
             const weaponSet = document.getElementById('mpWeaponSelect').value;
+            this.addLog('NET', `Creating 16-Player Match on ${STAGE_NAMES[stage]} (Scenario: ${scenario}, Weapons: ${weaponSet})...`);
             this.netplay.createRoom({
                 mode: 'multiplayer',
                 stage: stage,
@@ -238,6 +363,7 @@ class GoldenEyeApp {
 
         // Refresh Rooms
         document.getElementById('btnRefreshRooms').addEventListener('click', () => {
+            this.addLog('NET', 'Refreshing active multiplayer room list...');
             this.netplay.listRooms();
         });
 
@@ -261,6 +387,7 @@ class GoldenEyeApp {
     }
 
     async handleRomFile(file) {
+        this.addLog('ENGINE', `Reading ROM file: "${file.name}" (${file.size} bytes)...`);
         this.showToast(`Reading ROM: ${file.name}...`);
         const arrayBuffer = await file.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
@@ -270,11 +397,13 @@ class GoldenEyeApp {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const sha1 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-        console.log('ROM SHA-1 Checksum:', sha1);
+        this.addLog('ENGINE', `ROM SHA-1 Checksum: ${sha1}`);
 
         if (sha1 !== EXPECTED_SHA1) {
-            this.showToast(`Warning: SHA-1 (${sha1}) does not match retail US ROM. Attempting to load anyway...`);
+            this.addLog('WARN', `SHA-1 mismatch. Expected: ${EXPECTED_SHA1}, Actual: ${sha1}. Proceeding anyway...`);
+            this.showToast(`Warning: SHA-1 does not match retail US ROM. Loading anyway...`);
         } else {
+            this.addLog('ENGINE', 'Authentic GoldenEye 007 (USA) ROM verified (100% Match).');
             this.showToast('Authentic GoldenEye 007 (USA) ROM Verified!');
         }
 
@@ -293,7 +422,9 @@ class GoldenEyeApp {
             this.module.HEAPU8.set(this.romData, romPtr);
             this.module._hal_os_set_rom_data(romPtr, this.romData.length);
             this.module._free(romPtr);
-            console.log('ROM successfully mounted into Web HAL OS.');
+            const dmaTransfers = this.module._hal_os_get_dma_transfers();
+            const dmaBytes = this.module._hal_os_get_dma_bytes();
+            this.addLog('ENGINE', `ROM mounted in Web HAL OS. Initial DMA transfers: ${dmaTransfers}, Bytes: ${dmaBytes}`);
         }
 
         // Start initial stage (Dam)
@@ -302,26 +433,31 @@ class GoldenEyeApp {
 
     initNetplayEvents() {
         this.netplay.onRoomCreatedCallback = (msg) => {
+            this.addLog('NET', `Room created successfully. Share Room Code: ${msg.roomCode}`);
             this.showToast(`Room Created! Code: ${msg.roomCode}`);
             this.currentStage = msg.roomInfo.stage;
             this.startSoloMission(this.currentStage);
         };
 
         this.netplay.onRoomJoinedCallback = (msg) => {
+            this.addLog('NET', `Joined room "${msg.roomCode}". Stage: ${msg.roomInfo.stage}, Mode: ${msg.roomInfo.mode}`);
             this.showToast(`Joined Room ${msg.roomCode}! Starting session...`);
             this.currentStage = msg.roomInfo.stage;
             this.startSoloMission(this.currentStage);
         };
 
         this.netplay.onPeerJoinedCallback = (peer, roomInfo) => {
+            this.addLog('NET', `Peer connected: "${peer.name}" (Slot ${peer.slot}). Room: ${roomInfo.playerCount}/${roomInfo.maxPlayers}`);
             this.showToast(`${peer.name} joined the mission! (${roomInfo.playerCount}/${roomInfo.maxPlayers})`);
         };
 
         this.netplay.onPeerLeftCallback = (peerId, roomInfo) => {
+            this.addLog('NET', `Peer ${peerId} disconnected. Remaining players: ${roomInfo.playerCount}/${roomInfo.maxPlayers}`);
             this.showToast(`A player disconnected. (${roomInfo.playerCount}/${roomInfo.maxPlayers})`);
         };
 
         this.netplay.onRoomListCallback = (rooms) => {
+            this.addLog('NET', `Received room list: ${rooms.length} active room(s).`);
             const tbody = document.getElementById('roomTableBody');
             if (!rooms || rooms.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No active matches found. Create one to begin!</td></tr>';
@@ -346,6 +482,7 @@ class GoldenEyeApp {
         };
 
         this.netplay.onErrorCallback = (err) => {
+            this.addLog('ERROR', `Netplay Signaling Error: ${err}`);
             this.showToast(`Netplay: ${err}`);
         };
     }
@@ -384,6 +521,7 @@ class GoldenEyeApp {
 
         document.addEventListener('pointerlockchange', () => {
             this.mouse.isLocked = (document.pointerLockElement === this.canvas);
+            this.addLog('INFO', `Mouse Pointer Lock: ${this.mouse.isLocked ? 'ACTIVE' : 'RELEASED'}`);
         });
 
         window.addEventListener('mousemove', (e) => {
@@ -398,14 +536,19 @@ class GoldenEyeApp {
         if (!this.romLoaded || !this.module) return;
 
         this.currentStage = stageId;
-        this.showToast(`Loading Mission: ${STAGE_NAMES[stageId] || 'Stage ' + stageId}...`);
+        const stageName = STAGE_NAMES[stageId] || 'Stage ' + stageId;
+        this.addLog('ENGINE', `Starting Mission: ${stageName} (Stage ID: ${stageId})...`);
+        this.showToast(`Loading Mission: ${stageName}...`);
 
-        // Set stage in WASM engine
+        // Set stage in WASM engine & initialize
         this.module._bossSetLoadedStage(stageId);
         this.module._hal_engine_init();
 
         this.isRunning = true;
-        document.getElementById('statStage').textContent = STAGE_NAMES[stageId] || `Stage ${stageId}`;
+        document.getElementById('statStage').textContent = stageName;
+
+        const guards = this.module._hal_engine_get_guard_count();
+        this.addLog('ENGINE', `Stage ${stageId} loaded successfully. Active guards in level: ${guards}`);
 
         // Start 60Hz Game Loop
         this.runGameLoop();
@@ -414,100 +557,116 @@ class GoldenEyeApp {
     runGameLoop() {
         if (!this.isRunning) return;
 
-        // 1. Process Input
-        let n64Buttons = 0;
+        try {
+            // 1. Process Input
+            let n64Buttons = 0;
 
-        // WASD Movement
-        if (this.keys['KeyW']) n64Buttons |= 0x0800; // Stick Up
-        if (this.keys['KeyS']) n64Buttons |= 0x0400; // Stick Down
-        if (this.keys['KeyA']) n64Buttons |= 0x0200; // Stick Left
-        if (this.keys['KeyD']) n64Buttons |= 0x0100; // Stick Right
+            // WASD Movement
+            if (this.keys['KeyW']) n64Buttons |= 0x0800; // Stick Up
+            if (this.keys['KeyS']) n64Buttons |= 0x0400; // Stick Down
+            if (this.keys['KeyA']) n64Buttons |= 0x0200; // Stick Left
+            if (this.keys['KeyD']) n64Buttons |= 0x0100; // Stick Right
 
-        // Action Keys
-        if (this.keys['Mouse0'] || this.keys['KeyF']) {
-            n64Buttons |= 0x8000; // Z-Trigger (Fire)
-            this.renderer.triggerFireEffect();
-        }
-        if (this.keys['Mouse2']) n64Buttons |= 0x0020; // R-Button (Aim Down Sights)
-        if (this.keys['Space'] || this.keys['KeyE']) n64Buttons |= 0x4000; // A-Button (Open Door / Action)
-        if (this.keys['KeyR']) n64Buttons |= 0x2000; // B-Button (Reload / Action)
-        if (this.keys['Tab']) n64Buttons |= 0x1000; // Start / Watch
+            // Action Keys
+            if (this.keys['Mouse0'] || this.keys['KeyF']) {
+                n64Buttons |= 0x8000; // Z-Trigger (Fire)
+                this.renderer.triggerFireEffect();
+            }
+            if (this.keys['Mouse2']) n64Buttons |= 0x0020; // R-Button (Aim Down Sights)
+            if (this.keys['Space'] || this.keys['KeyE']) n64Buttons |= 0x4000; // A-Button (Open Door / Action)
+            if (this.keys['KeyR']) n64Buttons |= 0x2000; // B-Button (Reload / Action)
+            if (this.keys['Tab']) n64Buttons |= 0x1000; // Start / Watch
 
-        // Poll Gamepad
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-        if (gamepads[0]) {
-            const gp = gamepads[0];
-            if (gp.axes[1] < -0.3) n64Buttons |= 0x0800;
-            if (gp.axes[1] > 0.3) n64Buttons |= 0x0400;
-            if (gp.axes[0] < -0.3) n64Buttons |= 0x0200;
-            if (gp.axes[0] > 0.3) n64Buttons |= 0x0100;
-            if (gp.buttons[7] && gp.buttons[7].pressed) n64Buttons |= 0x8000; // RT (Fire)
-            if (gp.buttons[6] && gp.buttons[6].pressed) n64Buttons |= 0x0020; // LT (Aim)
-            if (gp.buttons[0] && gp.buttons[0].pressed) n64Buttons |= 0x4000; // A (Action)
-            if (gp.buttons[2] && gp.buttons[2].pressed) n64Buttons |= 0x2000; // X (Reload)
-            if (gp.buttons[9] && gp.buttons[9].pressed) n64Buttons |= 0x1000; // Start
-        }
+            // Poll Gamepad
+            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+            if (gamepads[0]) {
+                const gp = gamepads[0];
+                if (gp.axes[1] < -0.3) n64Buttons |= 0x0800;
+                if (gp.axes[1] > 0.3) n64Buttons |= 0x0400;
+                if (gp.axes[0] < -0.3) n64Buttons |= 0x0200;
+                if (gp.axes[0] > 0.3) n64Buttons |= 0x0100;
+                if (gp.buttons[7] && gp.buttons[7].pressed) n64Buttons |= 0x8000; // RT (Fire)
+                if (gp.buttons[6] && gp.buttons[6].pressed) n64Buttons |= 0x0020; // LT (Aim)
+                if (gp.buttons[0] && gp.buttons[0].pressed) n64Buttons |= 0x4000; // A (Action)
+                if (gp.buttons[2] && gp.buttons[2].pressed) n64Buttons |= 0x2000; // X (Reload)
+                if (gp.buttons[9] && gp.buttons[9].pressed) n64Buttons |= 0x1000; // Start
+            }
 
-        // Set inputs to WASM Engine
-        this.module._hal_input_set_buttons(n64Buttons);
+            // Set inputs to WASM Engine
+            this.module._hal_input_set_buttons(n64Buttons);
 
-        // Step Game Physics & Simulation (60Hz tick)
-        this.module._hal_engine_step();
+            // Step Game Physics & Simulation (60Hz tick)
+            this.module._hal_engine_step();
+            this.frameCount++;
 
-        // 2. Query Engine State
-        const health = this.module._hal_player_get_health();
-        const armor = this.module._hal_player_get_armor();
-        const weaponId = this.module._hal_player_get_weapon();
-        const ammo = this.module._hal_player_get_ammo();
-        const guards = this.module._hal_engine_get_guard_count();
+            // 2. Query Engine State
+            const posX = Math.round(this.module._hal_player_get_pos_x());
+            const posY = Math.round(this.module._hal_player_get_pos_y());
+            const posZ = Math.round(this.module._hal_player_get_pos_z());
+            const health = this.module._hal_player_get_health();
+            const armor = this.module._hal_player_get_armor();
+            const weaponId = this.module._hal_player_get_weapon();
+            const ammo = this.module._hal_player_get_ammo();
+            const guards = this.module._hal_engine_get_guard_count();
 
-        // Query GBI Telemetry
-        const jsonPtr = this.module._malloc(256);
-        this.module._hal_gfx_get_telemetry_json(jsonPtr, 256);
-        const jsonStr = this.module.UTF8ToString(jsonPtr);
-        this.module._free(jsonPtr);
-        let gbi = { commands: 0 };
-        try { gbi = JSON.parse(jsonStr); } catch (e) {}
+            // Query GBI Telemetry
+            const jsonPtr = this.module._malloc(256);
+            this.module._hal_gfx_get_telemetry_json(jsonPtr, 256);
+            const jsonStr = this.module.UTF8ToString(jsonPtr);
+            this.module._free(jsonPtr);
+            let gbi = { commands: 0, vertices: 0, textures: 0 };
+            try { gbi = JSON.parse(jsonStr); } catch (e) {}
 
-        // Update stats
-        document.getElementById('statFps').textContent = this.renderer.stats.fps;
-        document.getElementById('statGuards').textContent = guards;
-        document.getElementById('statDraws').textContent = gbi.commands || 142;
-        if (this.netplay.ping > 0) {
-            document.getElementById('pingDisplay').textContent = `Ping: ${this.netplay.ping} ms`;
-        }
+            // Update stats
+            document.getElementById('statFps').textContent = this.renderer.stats.fps;
+            document.getElementById('statGuards').textContent = guards;
+            document.getElementById('statDraws').textContent = gbi.commands || 142;
+            document.getElementById('statPos').textContent = `X:${posX} Y:${posY} Z:${posZ}`;
+            if (this.netplay.ping > 0) {
+                document.getElementById('pingDisplay').textContent = `Ping: ${this.netplay.ping} ms`;
+            }
 
-        // 3. Render WebGL Frame
-        const fbPtr = this.module._hal_gfx_get_framebuffer();
-        const fb16 = new Uint16Array(this.module.HEAPU8.buffer, fbPtr, 320 * 240);
+            // Log periodic GBI telemetry every 180 frames (~3 seconds)
+            const now = performance.now();
+            if (now - this.lastDiagTime >= 3000) {
+                this.addLog('GBI', `Frame ${this.frameCount} — GBI Commands: ${gbi.commands}, Vertices: ${gbi.vertices}, Textures: ${gbi.textures}, FPS: ${this.renderer.stats.fps}`);
+                this.lastDiagTime = now;
+            }
 
-        this.renderer.render(fb16, 320, 240, {
-            health: health,
-            armor: armor,
-            weaponName: WEAPON_NAMES[weaponId] || 'PP7 SPECIAL ISSUE',
-            weaponId: weaponId,
-            loadedAmmo: ammo,
-            reserveAmmo: 40
-        });
+            // 3. Render WebGL Frame
+            const fbPtr = this.module._hal_gfx_get_framebuffer();
+            const fb16 = new Uint16Array(this.module.HEAPU8.buffer, fbPtr, 320 * 240);
 
-        // 4. Netplay Broadcast (if Host)
-        if (this.netplay.isHost) {
-            this.netplay.broadcastSnapshot({
-                tick: performance.now(),
-                stage: this.currentStage,
-                players: [
-                    {
-                        id: this.netplay.clientId,
-                        slot: 1,
-                        x: this.module._hal_player_get_pos_x(),
-                        y: this.module._hal_player_get_pos_y(),
-                        z: this.module._hal_player_get_pos_z(),
-                        health: health,
-                        armor: armor,
-                        weapon: weaponId
-                    }
-                ]
+            this.renderer.render(fb16, 320, 240, {
+                health: health,
+                armor: armor,
+                weaponName: WEAPON_NAMES[weaponId] || 'PP7 SPECIAL ISSUE',
+                weaponId: weaponId,
+                loadedAmmo: ammo,
+                reserveAmmo: 40
             });
+
+            // 4. Netplay Broadcast (if Host)
+            if (this.netplay.isHost) {
+                this.netplay.broadcastSnapshot({
+                    tick: performance.now(),
+                    stage: this.currentStage,
+                    players: [
+                        {
+                            id: this.netplay.clientId,
+                            slot: 1,
+                            x: posX,
+                            y: posY,
+                            z: posZ,
+                            health: health,
+                            armor: armor,
+                            weapon: weaponId
+                        }
+                    ]
+                });
+            }
+        } catch (err) {
+            this.addLog('ERROR', `Game Loop Error on Frame ${this.frameCount}: ${err.message || err}`);
         }
 
         requestAnimationFrame(() => this.runGameLoop());
@@ -524,6 +683,15 @@ class GoldenEyeApp {
             setTimeout(() => toast.remove(), 300);
         }, 4000);
     }
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 window.addEventListener('DOMContentLoaded', () => {

@@ -3,10 +3,10 @@
  * 
  * Features:
  * - WebGL 2.0 GPU pipeline for authentic Fast3D graphics
- * - Texture caching, filtering, and blending
+ * - Proper upright texture mapping for both 3D N64 Framebuffer & 2D HUD
  * - Authentic James Bond HUD (Health & Armor bars, Dynamic Crosshair, Ammo & Weapon icons, Radar)
  * - Multiplayer name tags, kill feed, and scoreboard
- * - Co-op and 16-player split/fullscreen rendering
+ * - Live GBI & WebGL telemetry reporting
  */
 
 class Fast3DGLRenderer {
@@ -40,7 +40,8 @@ class Fast3DGLRenderer {
             triangles: 0,
             vertices: 0,
             texturesLoaded: 0,
-            fps: 60
+            fps: 60,
+            frameTimeMs: 16.6
         };
 
         this.lastFrameTime = performance.now();
@@ -71,8 +72,7 @@ class Fast3DGLRenderer {
         const gl = this.gl;
         gl.clearColor(0.05, 0.05, 0.05, 1.0);
         gl.clearDepth(1.0);
-        gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LEQUAL);
+        gl.disable(gl.DEPTH_TEST); // Fullscreen blit quad
 
         // Screen-aligned quad shader for high-fidelity framebuffer & post-processing
         const vsSource = `#version 300 es
@@ -95,8 +95,10 @@ class Fast3DGLRenderer {
 
         void main() {
             vec2 uv = v_texCoord;
+            // Framebuffer from N64 (top-left is 0,0)
             vec4 gameCol = texture(u_framebuffer, uv);
-            vec4 hudCol = texture(u_hud, vec2(uv.x, 1.0 - uv.y));
+            // 2D HTML Canvas HUD texture (matching UV)
+            vec4 hudCol = texture(u_hud, uv);
 
             // Apply damage flash effect
             if (u_damageFlash > 0.01) {
@@ -110,18 +112,23 @@ class Fast3DGLRenderer {
 
         this.program = this.createProgram(vsSource, fsSource);
 
-        // Setup fullscreen quad buffer
+        // Setup fullscreen quad buffer (Normalized Device Coordinates -> Texture UVs)
         this.quadVAO = gl.createVertexArray();
         gl.bindVertexArray(this.quadVAO);
 
+        // Map Quad coordinates:
+        // Top-Left: (-1, 1) -> UV (0, 0)
+        // Top-Right: (1, 1) -> UV (1, 0)
+        // Bottom-Left: (-1, -1) -> UV (0, 1)
+        // Bottom-Right: (1, -1) -> UV (1, 1)
         const quadVerts = new Float32Array([
             // Pos (x, y), UV (u, v)
-            -1.0, -1.0, 0.0, 1.0,
-             1.0, -1.0, 1.0, 1.0,
             -1.0,  1.0, 0.0, 0.0,
-            -1.0,  1.0, 0.0, 0.0,
-             1.0, -1.0, 1.0, 1.0,
              1.0,  1.0, 1.0, 0.0,
+            -1.0, -1.0, 0.0, 1.0,
+            -1.0, -1.0, 0.0, 1.0,
+             1.0,  1.0, 1.0, 0.0,
+             1.0, -1.0, 1.0, 1.0,
         ]);
 
         const vbo = gl.createBuffer();
@@ -200,8 +207,10 @@ class Fast3DGLRenderer {
     updateStats() {
         const now = performance.now();
         this.frameCount++;
-        if (now - this.lastFrameTime >= 1000) {
-            this.stats.fps = Math.round((this.frameCount * 1000) / (now - this.lastFrameTime));
+        const delta = now - this.lastFrameTime;
+        this.stats.frameTimeMs = delta;
+        if (delta >= 1000) {
+            this.stats.fps = Math.round((this.frameCount * 1000) / delta);
             this.frameCount = 0;
             this.lastFrameTime = now;
         }
@@ -221,7 +230,7 @@ class Fast3DGLRenderer {
         // 1. Draw HUD onto 2D canvas
         this.drawHUD();
 
-        // 2. Convert N64 RGBA5551/RGB565 framebuffer to RGBA8888 for WebGL texture upload
+        // 2. Convert N64 RGBA5551 framebuffer to RGBA8888 for WebGL texture upload
         const rgbaBytes = new Uint8Array(width * height * 4);
         if (fb16Array) {
             for (let i = 0; i < width * height; i++) {
@@ -246,11 +255,13 @@ class Fast3DGLRenderer {
             // Upload game framebuffer texture
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, this.gameTexture);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, rgbaBytes);
 
             // Upload HUD canvas texture
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, this.hudTexture);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.hudCanvas);
 
             // Render composited frame
@@ -263,7 +274,6 @@ class Fast3DGLRenderer {
             gl.bindVertexArray(this.quadVAO);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
         } else {
-            // 2D Fallback
             const ctx = this.ctx2d;
             ctx.drawImage(this.hudCanvas, 0, 0);
         }
@@ -282,7 +292,7 @@ class Fast3DGLRenderer {
         // ---------------------------------------------------------------------
         const cx = w / 2;
         const cy = h / 2;
-        const spread = state.crosshairSpread * (w / 640);
+        const spread = (state.crosshairSpread || 0) * (w / 640);
         const baseSize = 14 * (w / 640);
         const gap = 6 * (w / 640) + spread;
 
@@ -316,17 +326,17 @@ class Fast3DGLRenderer {
         // Center dot
         ctx.fillStyle = 'rgba(255, 50, 50, 0.9)';
         ctx.beginPath();
-        ctx.arc(cx, cy, 2 * (w / 640), 0, Math.PI * 2);
+        ctx.arc(cx, cy, 2.5 * (w / 640), 0, Math.PI * 2);
         ctx.fill();
 
         // ---------------------------------------------------------------------
-        // 2. Health & Armor Vertical Bars (GoldenEye Authentic Left & Right HUD)
+        // 2. Health & Armor Vertical Bars (Bottom-Left: Authentic GoldenEye 007)
         // ---------------------------------------------------------------------
         const barW = 10 * (w / 640);
-        const barH = 140 * (h / 480);
+        const barH = 130 * (h / 480);
         const barY = h - barH - 30 * (h / 480);
 
-        // Health Bar (Left - Authentic Red)
+        // Health Bar (Left - Red)
         const healthX = 30 * (w / 640);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.fillRect(healthX - 2, barY - 2, barW + 4, barH + 4);
@@ -334,14 +344,14 @@ class Fast3DGLRenderer {
         ctx.lineWidth = 1;
         ctx.strokeRect(healthX - 2, barY - 2, barW + 4, barH + 4);
 
-        const currentHealthH = Math.max(0, Math.min(1.0, state.health)) * barH;
+        const currentHealthH = Math.max(0, Math.min(1.0, state.health !== undefined ? state.health : 1.0)) * barH;
         const healthGrad = ctx.createLinearGradient(0, barY + barH, 0, barY);
         healthGrad.addColorStop(0, '#c01010');
         healthGrad.addColorStop(1, '#ff3030');
         ctx.fillStyle = healthGrad;
         ctx.fillRect(healthX, barY + (barH - currentHealthH), barW, currentHealthH);
 
-        // Armor Bar (Left side next to health - Authentic Blue)
+        // Armor Bar (Next to health - Blue)
         const armorX = healthX + barW + 6;
         if (state.armor > 0) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -357,7 +367,7 @@ class Fast3DGLRenderer {
         }
 
         // ---------------------------------------------------------------------
-        // 3. Ammo & Weapon Info (Bottom Right)
+        // 3. Ammo & Weapon Info (Bottom-Right: Authentic GoldenEye 007)
         // ---------------------------------------------------------------------
         const ammoX = w - 40 * (w / 640);
         const ammoY = h - 35 * (h / 480);
@@ -373,8 +383,8 @@ class Fast3DGLRenderer {
         }
 
         ctx.font = `600 ${Math.round(14 * (w / 640))}px "Outfit", "Inter", sans-serif`;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.fillText(state.weaponName.toUpperCase(), ammoX, ammoY - 28 * (h / 480));
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.fillText((state.weaponName || 'PP7 SPECIAL ISSUE').toUpperCase(), ammoX, ammoY - 28 * (h / 480));
         ctx.shadowBlur = 0;
 
         // ---------------------------------------------------------------------

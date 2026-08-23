@@ -176,13 +176,9 @@ static const void *resolve_seg_address(u32 addr) {
     if (addr >= 0x80000000) {
         return (const void *)(uintptr_t)(addr & 0x1FFFFFFF);
     }
-    /* If addr is already a valid direct pointer in engine heap/bss, use directly */
-    if (addr >= (uintptr_t)_bssSegmentEnd && addr < ((uintptr_t)_bssSegmentEnd + (32 * 1024 * 1024))) {
-        return (const void *)(uintptr_t)addr;
-    }
     u32 seg = (addr >> 24) & 0x0F;
     u32 off = addr & 0x00FFFFFF;
-    if (s_Segments[seg] != 0 && off < 0x00400000) {
+    if (seg > 0 && seg < 16 && s_Segments[seg] != 0) {
         return (const void *)(s_Segments[seg] + off);
     }
     return (const void *)(uintptr_t)addr;
@@ -330,16 +326,20 @@ static void rasterize_triangle(const TransformedVertex *v0, const TransformedVer
 
                     u8 r = vertR, g = vertG, b = vertB, a = vertA;
 
-                    if (s_TextureEnabled && (s_GeometryMode & G_TEXTURE_ENABLE)) {
+                    if (s_TextureEnabled) {
                         float u = (w0 * v0->u + w1 * v1->u + w2 * v2->u) * s_TextureScaleS;
                         float v = (w0 * v0->v + w1 * v1->v + w2 * v2->v) * s_TextureScaleT;
                         u8 texR, texG, texB, texA;
                         sample_texture(tile, u, v, &texR, &texG, &texB, &texA);
 
-                        r = (u8)(((u32)vertR * (u32)texR) / 255);
-                        g = (u8)(((u32)vertG * (u32)texG) / 255);
-                        b = (u8)(((u32)vertB * (u32)texB) / 255);
-                        a = (u8)(((u32)vertA * (u32)texA) / 255);
+                        if (vertR == 0 && vertG == 0 && vertB == 0) {
+                            r = texR; g = texG; b = texB; a = texA;
+                        } else {
+                            r = (u8)(((u32)vertR * (u32)texR) / 255);
+                            g = (u8)(((u32)vertG * (u32)texG) / 255);
+                            b = (u8)(((u32)vertB * (u32)texB) / 255);
+                            a = (u8)(((u32)vertA * (u32)texA) / 255);
+                        }
                     }
 
                     if (a > 8) {

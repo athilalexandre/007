@@ -7,7 +7,7 @@
     <meta name="description" content="Authentic decompiled GoldenEye 007 running natively in WebAssembly & WebGL 2.0 with 2-Player Co-op Campaign and 16-Player Host-Authoritative Online Multiplayer.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0a0c10;
@@ -18,6 +18,7 @@
             --accent-red: #e53935;
             --accent-blue: #1e88e5;
             --accent-cyan: #00bcd4;
+            --accent-green: #4caf50;
             --text-main: #f0f4fc;
             --text-muted: #8a99b5;
             --border-glass: rgba(255, 255, 255, 0.1);
@@ -52,7 +53,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 16px 32px;
-            background: rgba(10, 12, 16, 0.8);
+            background: rgba(10, 12, 16, 0.85);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-glass);
             position: sticky;
@@ -260,7 +261,8 @@
 
         .stats-group {
             display: flex;
-            gap: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             color: var(--text-muted);
@@ -272,7 +274,7 @@
 
         .btn-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
 
         .action-btn {
@@ -307,6 +309,99 @@
             background: #f0be42;
             transform: scale(1.02);
         }
+
+        /* Diagnostics & Log Console */
+        .debug-console-card {
+            width: 960px;
+            max-width: 100%;
+            background: rgba(12, 15, 22, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-glass);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .debug-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .debug-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .debug-filters {
+            display: flex;
+            gap: 6px;
+        }
+
+        .filter-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .filter-chip.active {
+            background: var(--accent-gold);
+            color: #000;
+            font-weight: 700;
+        }
+
+        .debug-terminal {
+            height: 180px;
+            overflow-y: auto;
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #cbd5e1;
+            background: #080a0f;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 8px;
+            word-break: break-all;
+        }
+
+        .log-time {
+            color: #64748b;
+            flex-shrink: 0;
+        }
+
+        .log-tag {
+            font-weight: 700;
+            flex-shrink: 0;
+            padding: 0 4px;
+            border-radius: 2px;
+        }
+
+        .log-tag.INFO { color: #38bdf8; }
+        .log-tag.WARN { color: #facc15; }
+        .log-tag.ERROR { color: #f87171; background: rgba(239, 68, 68, 0.15); }
+        .log-tag.ENGINE { color: #4ade80; }
+        .log-tag.GBI { color: #c084fc; }
 
         /* Panels Container */
         .panel-view {
@@ -543,6 +638,7 @@
                     <span>Stage: <b id="statStage">1 - Dam</b></span>
                     <span>Guards: <b id="statGuards">10</b></span>
                     <span>Draw Calls: <b id="statDraws">142</b></span>
+                    <span>Pos: <b id="statPos">X:0 Y:0 Z:0</b></span>
                 </div>
 
                 <div class="btn-group">
@@ -550,6 +646,25 @@
                     <button class="action-btn" id="btnFullscreen">⛶ Fullscreen</button>
                     <button class="action-btn" id="btnPointerLock">🖱️ Lock Mouse Aim</button>
                 </div>
+            </div>
+
+            <!-- Diagnostics & Live Debug Console Card -->
+            <div class="debug-console-card">
+                <div class="debug-header">
+                    <div class="debug-title">
+                        <span>📟 ENGINE & GBI DIAGNOSTICS CONSOLE</span>
+                    </div>
+                    <div class="debug-filters">
+                        <button class="filter-chip active" data-filter="ALL">ALL</button>
+                        <button class="filter-chip" data-filter="ENGINE">ENGINE</button>
+                        <button class="filter-chip" data-filter="GBI">GBI</button>
+                        <button class="filter-chip" data-filter="NET">NETPLAY</button>
+                        <button class="filter-chip" data-filter="ERR">ERRORS</button>
+                        <button class="filter-chip" id="btnClearLogs" style="margin-left: 8px;">Clear</button>
+                        <button class="filter-chip" id="btnCopyLogs">Copy</button>
+                    </div>
+                </div>
+                <div class="debug-terminal" id="debugTerminal"></div>
             </div>
         </div>
 
