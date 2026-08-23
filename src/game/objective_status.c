@@ -153,7 +153,9 @@ s32 get_difficulty_for_objective(s32 objectiveIndex)
 
 
 //horrible hack to get ai matching, but it does correctly refrence this func with 2 params
-#pragma weak    objectiveGetStatus_WEAK = get_status_of_objective
+s32 objectiveGetStatus_WEAK(s32 objectiveNum, s32 unused) {
+    return get_status_of_objective(objectiveNum);
+}
 
 /*
  * Return Status of objective.

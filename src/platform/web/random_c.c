@@ -1,15 +1,15 @@
 #include <ultra64.h>
 
-static u32 s_RandomSeed = 0x12345678;
-static u32 s_ChrRandomSeed = 0x87654321;
+u64 g_randomSeed = 0x12345678ULL;
+u64 g_chrObjRandomSeed = 0x87654321ULL;
 
 void randomSetSeed(u32 seed) {
-    s_RandomSeed = seed;
+    g_randomSeed = seed;
 }
 
 u32 randomGetNext(void) {
-    s_RandomSeed = s_RandomSeed * 0x41C64E6D + 0x3039;
-    return (s_RandomSeed >> 16) & 0x7FFF;
+    g_randomSeed = g_randomSeed * 0x41C64E6DULL + 0x3039ULL;
+    return (u32)((g_randomSeed >> 16) & 0x7FFF);
 }
 
 u32 randomGetNextFrom(u64 *param_1) {
@@ -19,12 +19,12 @@ u32 randomGetNextFrom(u64 *param_1) {
 }
 
 void chrObjRandomSetSeed(u32 seed) {
-    s_ChrRandomSeed = seed;
+    g_chrObjRandomSeed = seed;
 }
 
 u32 chrObjRandomGetNext(void) {
-    s_ChrRandomSeed = s_ChrRandomSeed * 0x41C64E6D + 0x3039;
-    return (s_ChrRandomSeed >> 16) & 0x7FFF;
+    g_chrObjRandomSeed = g_chrObjRandomSeed * 0x41C64E6DULL + 0x3039ULL;
+    return (u32)((g_chrObjRandomSeed >> 16) & 0x7FFF);
 }
 
 // ROM Segment Symbols required by linker

@@ -756,5 +756,72 @@ sImageTableEntry s_mpstageselimages[] = {
     {IMAGE_MP_RANDOM, 0x44, 0x2C, 0, G_IM_FMT_I, G_IM_SIZ_8b, G_TX_CLAMP, G_TX_CLAMP, 0}      // bg/where
 };
 
+#include <string.h>
+
+#define SAVE_RESTORE_ARRAY(arr) do { \
+    static typeof(arr) backup_##arr; \
+    static int init_##arr = 0; \
+    if (!init_##arr) { \
+        memcpy(backup_##arr, arr, sizeof(arr)); \
+        init_##arr = 1; \
+    } else { \
+        memcpy(arr, backup_##arr, sizeof(arr)); \
+    } \
+} while (0)
+
+void oddtextures_reset(void)
+{
+    SAVE_RESTORE_ARRAY(globalDL_0x000);
+    SAVE_RESTORE_ARRAY(globalDL_0x078);
+    SAVE_RESTORE_ARRAY(globalDL_0x120);
+    SAVE_RESTORE_ARRAY(globalDL_0x1c8);
+    SAVE_RESTORE_ARRAY(globalDL_0x270);
+    SAVE_RESTORE_ARRAY(globalDL_0x318);
+    SAVE_RESTORE_ARRAY(globalDL_0x3c0);
+    SAVE_RESTORE_ARRAY(globalDL_0x468);
+    SAVE_RESTORE_ARRAY(globalDL_0x510);
+    SAVE_RESTORE_ARRAY(globalDL_0x5b8);
+    SAVE_RESTORE_ARRAY(globalDL_0x660);
+    SAVE_RESTORE_ARRAY(globalDL_0x708);
+    SAVE_RESTORE_ARRAY(globalDL_0x7b0);
+    SAVE_RESTORE_ARRAY(globalDL_0x858);
+    SAVE_RESTORE_ARRAY(globalDL_0x900);
+    SAVE_RESTORE_ARRAY(globalDL_0x9a8);
+    SAVE_RESTORE_ARRAY(globalDL_0xa50);
+
+    SAVE_RESTORE_ARRAY(s_genericimage);
+    SAVE_RESTORE_ARRAY(s_impactimages);
+    SAVE_RESTORE_ARRAY(s_explosion_smokeimages);
+    SAVE_RESTORE_ARRAY(s_scattered_explosions);
+    SAVE_RESTORE_ARRAY(s_flareimage1);
+    SAVE_RESTORE_ARRAY(s_flareimage2);
+    SAVE_RESTORE_ARRAY(s_flareimage3);
+    SAVE_RESTORE_ARRAY(s_flareimage4);
+    SAVE_RESTORE_ARRAY(s_flareimage5);
+    SAVE_RESTORE_ARRAY(s_ammo9mmimage);
+    SAVE_RESTORE_ARRAY(s_rifleammoimage);
+    SAVE_RESTORE_ARRAY(s_shotgunammoimage);
+    SAVE_RESTORE_ARRAY(s_knifeammoimage);
+    SAVE_RESTORE_ARRAY(s_glammoimage);
+    SAVE_RESTORE_ARRAY(s_rocketammoimage);
+    SAVE_RESTORE_ARRAY(s_genericmineammoimage);
+    SAVE_RESTORE_ARRAY(s_grenadeammoimage);
+    SAVE_RESTORE_ARRAY(s_magnumammoimage);
+    SAVE_RESTORE_ARRAY(s_goldengunammoimage);
+    SAVE_RESTORE_ARRAY(s_remotemineammoimage);
+    SAVE_RESTORE_ARRAY(s_timedmineammoimage);
+    SAVE_RESTORE_ARRAY(s_proxmineammoimage);
+    SAVE_RESTORE_ARRAY(s_tankammoimage);
+    SAVE_RESTORE_ARRAY(s_crosshairimage);
+    SAVE_RESTORE_ARRAY(s_betacrosshairimage);
+    SAVE_RESTORE_ARRAY(s_glassoverlayimage);
+    SAVE_RESTORE_ARRAY(s_monitorimages);
+    SAVE_RESTORE_ARRAY(s_skywaterimages);
+    SAVE_RESTORE_ARRAY(s_mainfolderimages);
+    SAVE_RESTORE_ARRAY(s_mpradarimages);
+    SAVE_RESTORE_ARRAY(s_mpcharselimages);
+    SAVE_RESTORE_ARRAY(s_mpstageselimages);
+}
+
 
 

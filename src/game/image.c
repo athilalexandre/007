@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <ultra64.h>
 #include "bondconstants.h"
 #include "image.h"
@@ -12,13 +13,7 @@
 
 // bss
 //8008C720
-struct texpool *ptr_texture_alloc_start;
-//8008C724
-s32 ptr_texture_alloc_end;
-//8008C728
-s32 ptr_next_available_space;
-//8008C72C
-s32 ptr_last_entry_facemapping;
+struct texpool ptr_texture_alloc_start;
 //8008C730
 struct texcacheitem g_TexCacheItems[150];
 //8008D090
@@ -220,12 +215,12 @@ s32 texInflateZlib(u8 *src, u8 *dst, s32 arg2, s32 forcenumimages, struct texpoo
             g_TexCacheItems[g_TexCacheCount].heights[j - 1] = height;
         }
 
-        if ((width * height) >= 4097)
+        if ((width * height) >= 0x10000)
         {
             return j * 0;
         }
 
-        decompressdata(img_curpos, &scratch2, (struct huft *)&scratch);
+        decompressdata(img_curpos, scratch2, (struct huft *)scratch);
         imagebytesout = texAlignIndices(scratch2, width, height, format, &dst[totalbytesout]);
         texSetBitstring(rzipGetSomething());
 
@@ -2316,17 +2311,24 @@ s32 texFreeBytesInBuffer(struct texpool *arg0)
 
 void texLoadFromDisplayList(Gfx *gdl, struct texpool *arg1)
 {
-    u8 *bytes = (u8 *)gdl;
-
-    while (bytes[0] != (u8)G_ENDDL)
+    while (gdl)
     {
-        // Look for GBI sequence: fd...... abcd....
-        if (bytes[0] == G_SETTIMG && bytes[4] == 0xab && bytes[5] == 0xcd)
+        u32 w0 = gdl->words.w0;
+        u32 w1 = gdl->words.w1;
+        u8 cmd = (u8)(w0 >> 24);
+
+        if (cmd == (u8)G_ENDDL)
         {
-            texLoad((u32 *)((s32)bytes + 4), arg1);
+            break;
         }
 
-        bytes += 8;
+        // Look for GBI sequence: G_SETTIMG (0xFD) with IMAGESEG marker (0xABCD0000 | texnum)
+        if (cmd == (u8)G_SETTIMG && (w1 & 0xFFFF0000) == 0xABCD0000)
+        {
+            texLoad((s32 *)&gdl->words.w1, arg1);
+        }
+
+        gdl++;
     }
 }
 
@@ -2370,7 +2372,7 @@ extern u8 _imagesSegmentRomStart;
  */
 void texLoad(s32 *updateword, struct texpool *pool)
 {
-    u8 compbuffer[4000];
+    static u8 compbuffer[0x20000];
     u8 *compptr;
     s32 sp14a8;
     s32 iszlib;
@@ -2400,14 +2402,20 @@ void texLoad(s32 *updateword, struct texpool *pool)
         osWritebackDCacheAll();
         osInvalDCache(alignedcompbuffer, DCACHE_SIZE);
 
-        thisoffset = *((s32*)&g_Textures[g_TexNumToLoad]) & 0xFFFFFF;
-        nextoffset = (*((s32 *) (&g_Textures[g_TexNumToLoad + 1]))) & ((unsigned long) 0xFFFFFF);
+        thisoffset = g_Textures[g_TexNumToLoad].dataoffset;
+        nextoffset = g_Textures[g_TexNumToLoad + 1].dataoffset;
+
+        if (nextoffset <= thisoffset || (nextoffset - thisoffset) >= 0x20000)
+        {
+            *updateword = osVirtualToPhysical(pool->start);
+            return;
+        }
 
         if (TRUE)
         {
             // Copy the compressed texture to RAM
             romCopy(alignedcompbuffer,
-                    (u32) &_imagesSegmentRomStart + (thisoffset & 0xfffffff8),
+                    (void *)(0x8F7DF0 + (thisoffset & 0xfffffff8)),
                     ((u32) (nextoffset - thisoffset) + 0x1f) >> 4 << 4);
 
             compptr = (u8 *) alignedcompbuffer + (thisoffset & 7);

@@ -153,5 +153,6 @@ extern sImageTableEntry s_mainfolderimages[];
 extern sImageTableEntry s_mpradarimages[];
 extern sImageTableEntry s_mpcharselimages[];
 extern sImageTableEntry s_mpstageselimages[];
+void oddtextures_reset(void);
 
 #endif

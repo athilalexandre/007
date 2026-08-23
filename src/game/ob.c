@@ -201,7 +201,7 @@ void obLoadBGFileBytesAtOffset(u8 *bgname, u8 *target, s32 offset, s32 len)
     //if the size of offset data would exceed file size, loop forever
     if ((resource_lookup_data_array[index].rom_size + 0xF) < (offset + len))
     {
-      while (1){};
+      return;
     }
     romCopy(target, &fileentry->hw_address[offset], len);
   }

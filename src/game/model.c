@@ -5692,218 +5692,131 @@ void modelResetAnimationsScratchBuffer(void)
         var = (void *)((u32)var + diff)
 #endif
 
+static void modelPromoteNodeRecursive(ModelNode *node, u32 vma, s32 diff, u32 fileramaddr, int depth)
+{
+    if (!node || depth > 100) return;
+
+    s32 i;
+#ifdef TARGET_WEB
+    if ((node->Opcode & 0xFF) == 0 && (node->Opcode >> 8) != 0) {
+        node->Opcode = __builtin_bswap16(node->Opcode);
+    }
+#endif
+    u32 type = node->Opcode & 0xff;
+
+    PROMOTE(node->Data);
+    PROMOTE(node->Parent);
+    PROMOTE(node->Next);
+    PROMOTE(node->Prev);
+    PROMOTE(node->Child);
+
+    switch (type)
+    {
+        case MODELNODE_OPCODE_HEADER: {
+            ModelRoData_HeaderRecord* rodata = &node->Data->Header;
+            PROMOTE(rodata->FirstGroup);
+            break;
+        }
+        case MODELNODE_OPCODE_GROUP:
+        case MODELNODE_OPCODE_OP03:
+        case MODELNODE_OPCODE_GROUPSIMPLE:
+        case MODELNODE_OPCODE_OP17: {
+            ModelRoData_GroupRecord* rodata = &node->Data->Group;
+            PROMOTE(rodata->ChildGroup);
+            break;
+        }
+        case MODELNODE_OPCODE_DL: {
+            ModelRoData_DisplayListRecord* rodata = &node->Data->DisplayList;
+            PROMOTE(rodata->Vertices);
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        case MODELNODE_OPCODE_DLCOLLISION: {
+            ModelRoData_DisplayList_CollisionRecord* rodata = &node->Data->DisplayListCollisions;
+            PROMOTE(rodata->Vertices);
+            PROMOTE(rodata->CollisionVertices);
+            PROMOTE(rodata->PointUsage);
+            for (i = 0; i < rodata->numCollisionVertices; i++) {
+                PROMOTE(rodata->CollisionVertices[i].LinkedTo);
+            }
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        case MODELNODE_OPCODE_OP20: {
+            ModelRoData_HeaderRecord* rodata = &node->Data->Header;
+            PROMOTE(rodata->FirstGroup);
+            break;
+        }
+        case MODELNODE_OPCODE_OP05: {
+            ModelRoData_Op05Record* rodata = &node->Data->Op05;
+            PROMOTE(rodata->Images);
+            for (i = 0; i < rodata->NumChildren; i++) {
+                PROMOTE(rodata->Children[i].unk04);
+            }
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        case MODELNODE_OPCODE_OP06: {
+            ModelRoData_Op06Record* rodata = &node->Data->Op06;
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        case MODELNODE_OPCODE_LOD: {
+            ModelRoData_LODRecord* rodata = &node->Data->LOD;
+            PROMOTE(rodata->Affects);
+            node->Child = rodata->Affects;
+            break;
+        }
+        case MODELNODE_OPCODE_SWITCH: {
+            ModelRoData_SwitchRecord* rodata = &node->Data->Switch;
+            PROMOTE(rodata->Controls);
+            break;
+        }
+        case MODELNODE_OPCODE_BSP: {
+            ModelRoData_BSPRecord* rodata = &node->Data->BSP;
+            PROMOTE(rodata->leftChild);
+            PROMOTE(rodata->rightChild);
+            break;
+        }
+        case MODELNODE_OPCODE_OP11: {
+            ModelRoData_Op11Record* rodata = &node->Data->Op11;
+            PROMOTE(rodata->unk0c[15]);
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        case MODELNODE_OPCODE_GUNFIRE: {
+            ModelRoData_GunfireRecord* rodata = &node->Data->Gunfire;
+            PROMOTE(rodata->Image);
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        case MODELNODE_OPCODE_SHADOW: {
+            ModelRoData_ShadowRecord* rodata = &node->Data->Shadow;
+            PROMOTE(rodata->image);
+            PROMOTE(rodata->Header);
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        case MODELNODE_OPCODE_DLPRIMARY: {
+            ModelRoData_DisplayListPrimaryRecord* rodata = &node->Data->DisplayListPrimary;
+            PROMOTE(rodata->Vertices);
+            rodata->BaseAddr = (void *)fileramaddr;
+            break;
+        }
+        default:
+            break;
+    }
+
+    modelPromoteNodeRecursive(node->Child, vma, diff, fileramaddr, depth + 1);
+    modelPromoteNodeRecursive(node->Next, vma, diff, fileramaddr, depth + 1);
+}
+
 void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr)
 {
     s32 diff = fileramaddr - vma;
-    s32 i;
-    int safety = 0;
-
-    while (node && safety++ < 1000)
-    {
-#ifdef TARGET_WEB
-        if ((node->Opcode & 0xFF) == 0 && (node->Opcode >> 8) != 0) {
-            node->Opcode = __builtin_bswap16(node->Opcode);
-        }
-#endif
-        u32 type = node->Opcode & 0xff;
-
-        PROMOTE(node->Data);
-        PROMOTE(node->Parent);
-        PROMOTE(node->Next);
-        PROMOTE(node->Prev);
-        PROMOTE(node->Child);
-
-        PROMOTE(node->Data);
-        PROMOTE(node->Parent);
-        PROMOTE(node->Next);
-        PROMOTE(node->Prev);
-        PROMOTE(node->Child);
-
-        switch (type)
-        {
-            case MODELNODE_OPCODE_HEADER:
-                {
-                    ModelRoData_HeaderRecord* rodata = &node->Data->Header;
-                    PROMOTE(rodata->FirstGroup);
-                    break;
-                }
-
-            case MODELNODE_OPCODE_GROUP:
-                {
-                    ModelRoData_GroupRecord* rodata = &node->Data->Group;
-                    PROMOTE(rodata->ChildGroup);
-                    break;
-                }
-
-            case MODELNODE_OPCODE_OP03:
-                {
-                    ModelRoData_GroupRecord* rodata = &node->Data->Group;
-                    PROMOTE(rodata->ChildGroup);
-                    break;
-                }
-
-            case MODELNODE_OPCODE_DL:
-                {
-                    ModelRoData_DisplayListRecord* rodata = &node->Data->DisplayList;
-                    PROMOTE(rodata->Vertices);
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_DLCOLLISION:
-                {
-                    ModelRoData_DisplayList_CollisionRecord* rodata = &node->Data->DisplayListCollisions;
-                    PROMOTE(rodata->Vertices);
-                    PROMOTE(rodata->CollisionVertices);
-                    PROMOTE(rodata->PointUsage);
-                    for (i = 0; i < rodata->numCollisionVertices; i++)
-                    {
-                        PROMOTE(rodata->CollisionVertices[i].LinkedTo);
-                    }
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_OP20:
-                {
-                    ModelRoData_HeaderRecord* rodata = &node->Data->Header;
-                    PROMOTE(rodata->FirstGroup);
-                    break;
-                }
-
-            case MODELNODE_OPCODE_OP05:
-                {
-                    ModelRoData_Op05Record* rodata = &node->Data->Op05;
-
-                    // shared with op07
-                    PROMOTE(rodata->Children);
-                    PROMOTE(rodata->Vertices);
-                    PROMOTE(rodata->Images);
-                    for (i = 0; i < rodata->NumChildren; i++)
-                    {
-                        PROMOTE(rodata->Children[i].unk04);
-                    }
-
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_OP07:
-                {
-                    ModelRoData_Op07Record* rodata = &node->Data->Op07;
-                    PROMOTE(rodata->unk00);
-                    PROMOTE(rodata->unk04);
-
-                    // shared with op05
-                    PROMOTE(rodata->Children);
-                    PROMOTE(rodata->Vertices);
-                    PROMOTE(rodata->Images);
-                    for (i = 0; i < rodata->NumChildren; i++)
-                    {
-                        PROMOTE(rodata->Children[i].unk04);
-                    }
-
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_OP06:
-                {
-                    ModelRoData_Op06Record* rodata = &node->Data->Op06;
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_LOD:
-                {
-                    ModelRoData_LODRecord* rodata = &node->Data->LOD;
-                    PROMOTE(rodata->Affects);
-                    node->Child = rodata->Affects;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_SWITCH:
-                {
-                    ModelRoData_SwitchRecord* rodata = &node->Data->Switch;
-                    PROMOTE(rodata->Controls);
-                    break;
-                }
-
-            case MODELNODE_OPCODE_BSP:
-                {
-                    ModelRoData_BSPRecord* rodata = &node->Data->BSP;
-                    PROMOTE(rodata->leftChild);
-                    PROMOTE(rodata->rightChild);
-                    break;
-                }
-
-            case MODELNODE_OPCODE_OP17:
-                {
-                    ModelRoData_GroupRecord* rodata = &node->Data->Group;
-                    PROMOTE(rodata->ChildGroup);
-                    break;
-                }
-
-            case MODELNODE_OPCODE_OP11:
-                {
-                    ModelRoData_Op11Record* rodata = &node->Data->Op11;
-                    PROMOTE(rodata->unk0c[15]);
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_GUNFIRE:
-                {
-                    ModelRoData_GunfireRecord* rodata = &node->Data->Gunfire;
-                    PROMOTE(rodata->Image);
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_SHADOW:
-                {
-                    ModelRoData_ShadowRecord* rodata = &node->Data->Shadow;
-                    PROMOTE(rodata->image);
-                    PROMOTE(rodata->Header);
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            case MODELNODE_OPCODE_DLPRIMARY:
-                {
-                    ModelRoData_DisplayListPrimaryRecord* rodata = &node->Data->DisplayListPrimary;
-                    PROMOTE(rodata->Vertices);
-                    rodata->BaseAddr = (void *)fileramaddr;
-                    break;
-                }
-
-            default:
-                break;
-        }
-
-        if (node->Child)
-        {
-            node = node->Child;
-        }
-        else
-        {
-            while (node)
-            {
-                if (node->Next)
-                {
-                    node = node->Next;
-                    break;
-                }
-
-                node = node->Parent;
-            }
-        }
-    }
+    modelPromoteNodeRecursive(node, vma, diff, fileramaddr, 0);
 }
 
-/**
- * Address 7F075A90.
-*/
 void sub_GAME_7F075A90(ModelFileHeader *header, s32 vma, u32 addr) {
     s32 diff = addr - vma;
     s32 i;
@@ -6287,8 +6200,28 @@ void modelIterateDisplayLists(ModelFileHeader *fileheader, ModelNode **nodeptr, 
     {
         node = fileheader->RootNode;
     }
+    else
+    {
+        if (node->Child)
+        {
+            node = node->Child;
+        }
+        else
+        {
+            while (node)
+            {
+                if (node->Next)
+                {
+                    node = node->Next;
+                    break;
+                }
+                node = node->Parent;
+            }
+        }
+    }
 
-    while (node)
+    int safety = 0;
+    while (node && safety++ < 200)
     {
         u32 type = node->Opcode & 0xff;
 
@@ -6296,37 +6229,17 @@ void modelIterateDisplayLists(ModelFileHeader *fileheader, ModelNode **nodeptr, 
         {
             case MODELNODE_OPCODE_DL:
                 rodata = node->Data;
-
-                if (node != *nodeptr)
-                {
-                    gdl = rodata->DisplayList.Primary;
-                }
-                else if (rodata->DisplayList.Secondary != *gdlptr)
-                {
-                    gdl = rodata->DisplayList.Secondary;
-                }
+                gdl = rodata->DisplayList.Primary;
                 break;
 
             case MODELNODE_OPCODE_DLCOLLISION:
                 rodata = node->Data;
-
-                if (node != *nodeptr)
-                {
-                    gdl = rodata->DisplayListCollisions.Primary;
-                }
-                else if (rodata->DisplayListCollisions.Secondary != *gdlptr)
-                {
-                    gdl = rodata->DisplayListCollisions.Secondary;
-                }
+                gdl = rodata->DisplayListCollisions.Primary;
                 break;
 
             case MODELNODE_OPCODE_DLPRIMARY:
                 rodata = node->Data;
-
-                if (node != *nodeptr)
-                {
-                    gdl = rodata->DisplayListPrimary.Primary;
-                }
+                gdl = rodata->DisplayListPrimary.Primary;
                 break;
 
             case MODELNODE_OPCODE_LOD:
@@ -6368,7 +6281,6 @@ void modelIterateDisplayLists(ModelFileHeader *fileheader, ModelNode **nodeptr, 
     *gdlptr = gdl;
     *nodeptr = node;
 }
-
 
 void modelNodeReplaceGdl(u32 arg0, ModelNode *node, Gfx *find, Gfx *replacement)
 {

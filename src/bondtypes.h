@@ -398,19 +398,32 @@ typedef union
     */
     typedef struct StandTileHeaderMid
     {
+#if defined(TARGET_WEB) || defined(__wasm__) || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+        u16 b       : 4;
+        u16 g       : 4;
+        u16 r       : 4;
+        u16 special : 4;
+#else
         u16 special : 4;// 0=normal 1=kneeling 3=ladder
         u16 r       : 4;
         u16 g       : 4;
         u16 b       : 4;
+#endif
     } StandTileHeaderMid;
 
     typedef struct StandTileHeaderTail
     {
+#if defined(TARGET_WEB) || defined(__wasm__) || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+        s16 headerE    : 4;
+        s16 headerD    : 4;
+        s16 headerC    : 4;
+        s16 pointCount : 4;
+#else
         s16 pointCount : 4; // seen lh, not lhu. Also seen with an explicit unnecessary '& 0xF'
-        // Indices of the most extreme points (the resulting triangle should encompass _MOST_ of the tile)
         s16 headerC    : 4;
         s16 headerD    : 4;
         s16 headerE    : 4;
+#endif
     } StandTileHeaderTail;
 
     typedef struct StandTile

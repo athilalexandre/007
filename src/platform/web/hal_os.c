@@ -70,6 +70,54 @@ void hal_os_reset(void) {
     memset(_bssSegmentEnd, 0, sizeof(_bssSegmentEnd));
 }
 
+extern u8 _fontdlSegmentRomStart[];
+extern u8 _jfontchardataSegmentRomStart[];
+extern u8 _efontchardataSegmentRomStart[];
+extern u8 _animation_entriesSegmentRomStart[];
+extern u8 _animation_dataSegmentRomStart[];
+extern u8 _GlobalimagetableSegmentRomStart[];
+extern u8 _rarewarelogoSegmentRomStart[];
+extern u8 _fontbankgothicSegmentRomStart[];
+extern u8 _fontzurichboldSegmentRomStart[];
+extern u8 _imagesSegmentRomStart[];
+extern u8 _sfxctlSegmentRomStart[];
+extern u8 _sfxtblSegmentRomStart[];
+extern u8 _instrumentsctlSegmentRomStart[];
+extern u8 _instrumentstblSegmentRomStart[];
+extern u8 _musicsampletblSegmentRomStart[];
+
+static u32 resolve_rom_address(u32 devAddr) {
+    if (devAddr == (u32)&_fontdlSegmentRomStart) return 0x117880;
+    if (devAddr == (u32)&_GlobalimagetableSegmentRomStart) return 0x29D160;
+    if (devAddr == (u32)&_rarewarelogoSegmentRomStart) return 0x29E560;
+    if (devAddr == (u32)&_fontbankgothicSegmentRomStart) return 0x2E63F0;
+    if (devAddr == (u32)&_fontzurichboldSegmentRomStart) return 0x2E88A0;
+    if (devAddr == (u32)&_animation_dataSegmentRomStart) return 0x28E980;
+    if (devAddr == (u32)&_sfxctlSegmentRomStart) return 0x2EBDE0;
+    if (devAddr == (u32)&_sfxtblSegmentRomStart) return 0x2F19A0;
+    if (devAddr == (u32)&_instrumentsctlSegmentRomStart) return 0x3B4450;
+    if (devAddr == (u32)&_instrumentstblSegmentRomStart) return 0x3B87F0;
+    if (devAddr >= (u32)&_musicsampletblSegmentRomStart && devAddr < (u32)&_musicsampletblSegmentRomStart + 0x200000) {
+        return 0x419790 + (devAddr - (u32)&_musicsampletblSegmentRomStart);
+    }
+
+    if (devAddr >= (u32)&_imagesSegmentRomStart && devAddr < (u32)&_imagesSegmentRomStart + 0x800000) {
+        u32 roff = 0x8F7DF0 + (devAddr - (u32)&_imagesSegmentRomStart);
+        printf("[hal_os] _images devAddr=0x%x -> romOff=0x%x\n", devAddr, roff);
+        return roff;
+    }
+    if (devAddr >= (u32)&_jfontchardataSegmentRomStart && devAddr < (u32)&_jfontchardataSegmentRomStart + 0x100000) {
+        return 0x117940 + (devAddr - (u32)&_jfontchardataSegmentRomStart);
+    }
+    if (devAddr >= (u32)&_efontchardataSegmentRomStart && devAddr < (u32)&_efontchardataSegmentRomStart + 0x100000) {
+        return 0x123040 + (devAddr - (u32)&_efontchardataSegmentRomStart);
+    }
+    if (devAddr >= (u32)&_animation_entriesSegmentRomStart && devAddr < (u32)&_animation_entriesSegmentRomStart + 0x200000) {
+        return 0x124AC0 + (devAddr - (u32)&_animation_entriesSegmentRomStart);
+    }
+    return devAddr;
+}
+
 /* Libultra PI DMA implementation */
 s32 osPiStartDma(OSIoMesg *mb, s32 priority, s32 direction, u32 devAddr, void *dramAddr, u32 size, OSMesgQueue *mq) {
     if (direction != OS_READ || !dramAddr || size == 0) {
@@ -80,9 +128,10 @@ s32 osPiStartDma(OSIoMesg *mb, s32 priority, s32 direction, u32 devAddr, void *d
         return -1;
     }
 
-        printf("[osPiStartDma] devAddr=0x%08X dramAddr=%p size=%u romBufferSize=%u\n", devAddr, dramAddr, size, (u32)s_RomBufferSize);
+    devAddr = resolve_rom_address(devAddr);
     /* Bounds and overflow check */
     if (devAddr >= s_RomBufferSize || (devAddr + size) > s_RomBufferSize || (devAddr + size) < devAddr) {
+        printf("[osPiStartDma] OUT OF BOUNDS: devAddr=0x%08X size=%u romBufferSize=%u\n", devAddr, size, (u32)s_RomBufferSize);
         return -1;
     }
 

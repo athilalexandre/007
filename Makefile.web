@@ -36,7 +36,7 @@ LDFLAGS := -s WASM=1 -g \
            -s ALLOW_MEMORY_GROWTH=1 \
            -s INITIAL_MEMORY=67108864 \
            -s MAXIMUM_MEMORY=268435456 \
-           -s EXPORTED_FUNCTIONS="['_hal_engine_init','_hal_engine_step','_hal_engine_is_initialized','_hal_engine_get_frame_count','_hal_engine_get_stage_num','_hal_os_set_rom_data','_hal_os_get_rom_status','_hal_os_get_dma_transfers','_hal_os_get_dma_bytes','_hal_gfx_get_framebuffer','_hal_gfx_get_frame_count','_hal_gfx_get_telemetry_json','_hal_input_set_buttons','_hal_get_build_info','_malloc','_free']" \
+           -s EXPORTED_FUNCTIONS="['_hal_engine_init','_hal_engine_step','_hal_engine_is_initialized','_hal_engine_get_frame_count','_hal_engine_get_stage_num','_hal_os_set_rom_data','_hal_os_get_rom_status','_hal_os_get_dma_transfers','_hal_os_get_dma_bytes','_hal_gfx_get_framebuffer','_hal_gfx_get_frame_count','_hal_gfx_get_telemetry_json','_hal_input_set_buttons','_hal_get_build_info','_hal_player_get_pos_x','_hal_player_get_pos_y','_hal_player_get_pos_z','_hal_player_get_health','_hal_player_get_armor','_hal_player_get_weapon','_hal_player_get_ammo','_hal_engine_get_guard_count','_hal_engine_get_telemetry_json','_bossSetLoadedStage','_malloc','_free']" \
            -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','HEAPU8','HEAP16','HEAPU16','HEAP32','UTF8ToString']" \
            -s ENVIRONMENT=web,worker,node \
            -s MODULARIZE=1 \

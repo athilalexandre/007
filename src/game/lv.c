@@ -15,6 +15,8 @@
 #include <token.h>
 #include "debugmenu_handler.h"
 #include "lv.h"
+#include "sky.h"
+#include "options.h"
 #include "language.h"
 #include "initcheattext.h"
 #include "front.h"
@@ -408,14 +410,18 @@ void lvlStageLoad(s32 stage)
             }
         }
 
+        osSyncPrintf("[lvlStageLoad] calling load_bg_file\n");
         load_bg_file(g_CurrentStageToLoad);
+        osSyncPrintf("[lvlStageLoad] load_bg_file done\n");
         skySetStageNum(g_CurrentStageToLoad);
 
         // HACK: This method call is wrong. The function takes one argument, but the asm calls it without
         // any arguments here.
-        init_watch_at_start_of_stage();
-
+        osSyncPrintf("[lvlStageLoad] calling init_watch_at_start_of_stage\n");
+        init_watch_at_start_of_stage(g_CurrentStageToLoad);
+        osSyncPrintf("[lvlStageLoad] calling sub_GAME_7F0C11FC\n");
         sub_GAME_7F0C11FC(stage);
+        osSyncPrintf("[lvlStageLoad] sub_GAME_7F0C11FC done\n");
 
         for (i=0; i<4; i++)
         {
@@ -476,7 +482,36 @@ void lvlStageLoad(s32 stage)
         }
     }
 
-    something_with_stage_objectives();     mpwatchUnpauseGame();     sub_GAME_7F09B820();     initModelHitEntryFreeList();     modelmgrResetSlotCounts();     init_load_objpos_table();     reinit_between_menus();     init_sound_effects_registers();     init_guards();     bodiesReset(stage);     proplvreset2(stage);     alloc_explosion_smoke_casing_scorch_impact_buffers();     alloc_shattered_window_pieces();     sub_GAME_7F007290();     initCheatTextBuffer(); 
+    osSyncPrintf("[lvlStageLoad] calling something_with_stage_objectives\n");
+    something_with_stage_objectives();
+    osSyncPrintf("[lvlStageLoad] calling mpwatchUnpauseGame\n");
+    mpwatchUnpauseGame();
+    osSyncPrintf("[lvlStageLoad] calling sub_GAME_7F09B820\n");
+    sub_GAME_7F09B820();
+    osSyncPrintf("[lvlStageLoad] calling initModelHitEntryFreeList\n");
+    initModelHitEntryFreeList();
+    osSyncPrintf("[lvlStageLoad] calling modelmgrResetSlotCounts\n");
+    modelmgrResetSlotCounts();
+    osSyncPrintf("[lvlStageLoad] calling init_load_objpos_table\n");
+    init_load_objpos_table();
+    osSyncPrintf("[lvlStageLoad] calling reinit_between_menus\n");
+    reinit_between_menus();
+    osSyncPrintf("[lvlStageLoad] calling init_sound_effects_registers\n");
+    init_sound_effects_registers();
+    osSyncPrintf("[lvlStageLoad] calling init_guards\n");
+    init_guards();
+    osSyncPrintf("[lvlStageLoad] calling bodiesReset\n");
+    bodiesReset(stage);
+    osSyncPrintf("[lvlStageLoad] calling proplvreset2\n");
+    proplvreset2(stage);
+    osSyncPrintf("[lvlStageLoad] calling alloc_explosion_smoke_casing_scorch_impact_buffers\n");
+    alloc_explosion_smoke_casing_scorch_impact_buffers();
+    osSyncPrintf("[lvlStageLoad] calling alloc_shattered_window_pieces\n");
+    alloc_shattered_window_pieces();
+    osSyncPrintf("[lvlStageLoad] calling sub_GAME_7F007290\n");
+    sub_GAME_7F007290();
+    osSyncPrintf("[lvlStageLoad] calling initCheatTextBuffer\n");
+    initCheatTextBuffer(); 
     if (g_CurrentStageToLoad == LEVELID_TITLE)
     {
         disableOnscreenCheatText();
@@ -485,11 +520,14 @@ void lvlStageLoad(s32 stage)
     {
         s32 s0;
 
+        osSyncPrintf("[lvlStageLoad] calling init_path_table_links\n");
         init_path_table_links();
+        osSyncPrintf("[lvlStageLoad] calling init_ejected_cartridges\n");
         init_ejected_cartridges();
 
         for (s0 = 0; s0 < getPlayerCount(); s0++)
         {
+            osSyncPrintf("[lvlStageLoad] player %d init\n", s0);
             set_cur_player(s0);
             reinit_gunheld_totaltime();
             init_player_BONDdata_stats();
@@ -513,6 +551,7 @@ void lvlStageLoad(s32 stage)
     viSetVideoMode(MD_NORMAL);
     D_80048368 = 1.0f;
     lvlSetControlsLockedFlag(0);
+    osSyncPrintf("[lvlStageLoad] STAGE LOAD FINISHED SUCCESSFULLY!\n");
 }
 
 

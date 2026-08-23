@@ -66,7 +66,10 @@ extern s32 dword_CODE_bss_8007B9DC;
 // Necessary forward declaration
 void noteTileRoomIfDifferentToPrev( StandTile *tile,  StandTile *unused,  struct StandTileWalkCallbackRecord *data);
 
+struct StanPrefixRecord;
 void stanInit(void);
+void stanLoadFile(struct StanPrefixRecord *stan);
+void stanDetermineEOF(struct StanPrefixRecord *file, s32 origBase, u8 *newBase);
 void setLevelScale(f32 ls);
 void debugStanView(s8 joyX, s8 joyY, u16 joyBtns);
 void sub_GAME_7F0AF630(s32 arg0);

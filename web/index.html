@@ -3,406 +3,824 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoldenEye 007 - Authentic Decompiled Engine WebAssembly Test</title>
+    <title>GoldenEye 007 — WebGL 2.0 Port & Online Multiplayer (16P & Co-op)</title>
+    <meta name="description" content="Authentic decompiled GoldenEye 007 running natively in WebAssembly & WebGL 2.0 with 2-Player Co-op Campaign and 16-Player Host-Authoritative Online Multiplayer.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0b0e14;
-            --panel-bg: rgba(18, 24, 38, 0.95);
-            --border-color: #2a364f;
-            --accent-gold: #d4af37;
-            --accent-blue: #3b82f6;
-            --text-main: #e2e8f0;
-            --text-dim: #94a3b8;
-            --success: #22c55e;
-            --error: #ef4444;
-            --warning: #f59e0b;
+            --bg-dark: #0a0c10;
+            --bg-card: rgba(18, 22, 32, 0.85);
+            --bg-card-hover: rgba(28, 34, 48, 0.95);
+            --accent-gold: #e5b238;
+            --accent-gold-glow: rgba(229, 178, 56, 0.35);
+            --accent-red: #e53935;
+            --accent-blue: #1e88e5;
+            --accent-cyan: #00bcd4;
+            --text-main: #f0f4fc;
+            --text-muted: #8a99b5;
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --border-active: rgba(229, 178, 56, 0.6);
+            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            user-select: none;
         }
 
         body {
-            background-color: var(--bg-color);
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(229, 178, 56, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(30, 136, 229, 0.05) 0%, transparent 40%),
+                linear-gradient(180deg, #06080c 0%, #0d1117 100%);
             color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 20px;
         }
 
+        /* Top Header */
         header {
-            text-align: center;
-            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            background: rgba(10, 12, 16, 0.8);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-glass);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        header h1 {
-            color: var(--accent-gold);
-            font-size: 26px;
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-007 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
             letter-spacing: 2px;
+            color: var(--accent-gold);
+            text-shadow: 0 0 20px var(--accent-gold-glow);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, #c09020 0%, #ffd060 100%);
+            color: #000;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 4px;
             text-transform: uppercase;
-            margin-bottom: 4px;
+            letter-spacing: 1px;
         }
 
-        header p {
-            color: var(--text-dim);
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border-glass);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: #000;
+            background: var(--accent-gold);
+            box-shadow: 0 0 12px var(--accent-gold-glow);
+        }
+
+        /* Header Right Indicators */
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 16px;
             font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        .main-layout {
-            display: grid;
-            grid-template-columns: 660px 1fr;
-            gap: 20px;
-            max-width: 1200px;
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e53935;
+            box-shadow: 0 0 8px #e53935;
+        }
+
+        .status-dot.active {
+            background: #4caf50;
+            box-shadow: 0 0 8px #4caf50;
+        }
+
+        /* Main Workspace Container */
+        main {
+            flex: 1;
+            padding: 24px 32px;
+            max-width: 1600px;
+            margin: 0 auto;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
-        @media (max-width: 1050px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .screen-card {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
+        /* ROM Upload Dropzone */
+        #romDropzone {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 2px dashed rgba(229, 178, 56, 0.4);
+            border-radius: 16px;
+            padding: 36px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            gap: 12px;
+            box-shadow: var(--shadow-glass);
+        }
+
+        #romDropzone:hover, #romDropzone.dragover {
+            border-color: var(--accent-gold);
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px var(--accent-gold-glow);
+        }
+
+        .dropzone-icon {
+            font-size: 48px;
+            filter: drop-shadow(0 0 10px var(--accent-gold-glow));
+        }
+
+        .dropzone-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .dropzone-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        /* Game Viewport Container */
+        .game-wrapper {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
         }
 
         .canvas-container {
-            width: 640px;
-            height: 480px;
-            background: #000;
-            border: 2px solid #1a2234;
-            border-radius: 6px;
-            overflow: hidden;
             position: relative;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            max-width: 100%;
+            aspect-ratio: 4 / 3;
+            width: 960px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        canvas {
+        #gameCanvas {
             width: 100%;
             height: 100%;
+            display: block;
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
 
-        .drop-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(11, 14, 20, 0.94);
+        /* Controls Bar beneath Canvas */
+        .viewport-controls {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: background 0.2s;
+            justify-content: space-between;
+            width: 960px;
+            max-width: 100%;
+            padding: 12px 20px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            border: 1px solid var(--border-glass);
         }
 
-        .drop-overlay:hover {
-            background: rgba(18, 24, 38, 0.96);
+        .stats-group {
+            display: flex;
+            gap: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
         }
 
-        .drop-overlay.hidden {
-            display: none;
-        }
-
-        .drop-icon {
-            font-size: 44px;
+        .stats-group span b {
             color: var(--accent-gold);
-            margin-bottom: 10px;
         }
 
-        .btn-upload {
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--accent-gold);
+        }
+
+        .action-btn.primary {
             background: var(--accent-gold);
             color: #000;
-            font-weight: bold;
-            padding: 10px 20px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            margin-top: 12px;
-            font-size: 13px;
-            transition: transform 0.1s, opacity 0.2s;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 16px var(--accent-gold-glow);
         }
 
-        .btn-upload:hover {
-            opacity: 0.9;
+        .action-btn.primary:hover {
+            background: #f0be42;
             transform: scale(1.02);
         }
 
-        .sidebar {
+        /* Panels Container */
+        .panel-view {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            width: 100%;
+        }
+
+        .panel-view.active {
+            display: grid;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-glass);
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
         }
 
-        .info-card {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px 16px;
-        }
-
-        .info-card h2 {
-            font-size: 15px;
-            color: var(--accent-gold);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 6px;
-            margin-bottom: 10px;
+        .card-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-        }
-
-        .telemetry-row {
-            display: flex;
             justify-content: space-between;
-            font-size: 12px;
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 14px;
         }
 
-        .telemetry-row:last-child {
-            border-bottom: none;
-        }
-
-        .telemetry-label {
-            color: var(--text-dim);
-        }
-
-        .telemetry-val {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
             color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .status-tag {
-            padding: 2px 8px;
-            border-radius: 4px;
+        /* Form Controls */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-select, .form-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-glass);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-select:focus, .form-input:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 10px var(--accent-gold-glow);
+        }
+
+        /* Character Grid Selector */
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .char-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .char-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(229, 178, 56, 0.4);
+        }
+
+        .char-card.selected {
+            background: rgba(229, 178, 56, 0.15);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 12px var(--accent-gold-glow);
+        }
+
+        .char-avatar {
+            font-size: 28px;
+            margin-bottom: 6px;
+        }
+
+        .char-name {
             font-size: 11px;
-            font-weight: bold;
+            font-weight: 700;
+            color: var(--text-main);
             text-transform: uppercase;
         }
 
-        .status-ok {
-            background: rgba(34, 197, 94, 0.2);
-            color: var(--success);
-            border: 1px solid rgba(34, 197, 94, 0.4);
-        }
-
-        .status-idle {
-            background: rgba(148, 163, 184, 0.2);
-            color: var(--text-dim);
-            border: 1px solid rgba(148, 163, 184, 0.4);
-        }
-
-        .status-err {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--error);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-        }
-
-        .status-warn {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warning);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-        }
-
-        .error-banner {
-            display: none;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid var(--error);
-            color: #fca5a5;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-bottom: 16px;
+        /* Room Browser Table */
+        .room-table {
             width: 100%;
-            max-width: 1200px;
+            border-collapse: collapse;
+            font-size: 13px;
         }
 
-        .error-banner.visible {
-            display: block;
-        }
-
-        .logs-box {
-            background: #06080c;
-            border: 1px solid #1a2234;
-            border-radius: 6px;
-            padding: 8px 10px;
-            height: 120px;
-            overflow-y: auto;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        .room-table th {
+            text-align: left;
+            padding: 10px 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-glass);
             font-size: 11px;
-            color: #94a3b8;
-            line-height: 1.4;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .log-entry {
-            margin-bottom: 2px;
+        .room-table td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        .log-ok { color: var(--success); }
-        .log-err { color: var(--error); }
-        .log-info { color: var(--accent-blue); }
-        .log-warn { color: var(--warning); }
-
-        .controls-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            font-size: 11px;
-            color: var(--text-dim);
+        .room-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
         }
 
-        .key-badge {
-            background: #1a2234;
+        /* Toast Notifications */
+        #toastContainer {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: rgba(18, 22, 32, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-left: 4px solid var(--accent-gold);
+            padding: 12px 20px;
+            border-radius: 8px;
             color: var(--text-main);
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-family: monospace;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 1024px) {
+            .panel-view {
+                grid-template-columns: 1fr;
+            }
+            .viewport-controls {
+                flex-direction: column;
+                gap: 12px;
+            }
         }
     </style>
 </head>
 <body>
+
+    <!-- Header -->
     <header>
-        <h1>GoldenEye 007 (N64) Web Port</h1>
-        <p>Authentic Decompiled C Engine running via WebAssembly &middot; Native 320&times;240 RGBA5551</p>
+        <div class="brand-container">
+            <div class="logo-007">
+                GOLDENEYE 007
+                <span class="logo-badge">WebGL 2.0</span>
+            </div>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="singleplayer">🎯 Solo Mission</button>
+            <button class="tab-btn" data-tab="coop">👥 2P Co-op</button>
+            <button class="tab-btn" data-tab="multiplayer">🌐 16P Multiplayer</button>
+            <button class="tab-btn" data-tab="controls">⚙️ Controls</button>
+        </nav>
+
+        <div class="header-status">
+            <div class="status-pill">
+                <div class="status-dot" id="romStatusDot"></div>
+                <span id="romStatusText">ROM: Not Loaded</span>
+            </div>
+            <div class="status-pill">
+                <span id="pingDisplay">Ping: -- ms</span>
+            </div>
+        </div>
     </header>
 
-    <div class="error-banner" id="error-banner"></div>
-
-    <div class="main-layout">
-        <div class="screen-card">
-            <div class="canvas-container" id="canvas-container">
-                <canvas id="game-canvas" width="320" height="240"></canvas>
-                <div class="drop-overlay" id="drop-overlay">
-                    <div class="drop-icon">&#9654;</div>
-                    <h3>Provide GoldenEye 007 USA ROM</h3>
-                    <p style="margin-top: 4px; font-size: 13px; color: #94a3b8;">
-                        Drag & Drop <code>.z64</code>, <code>.v64</code>, or <code>.n64</code> file here
-                    </p>
-                    <input type="file" id="rom-file-input" accept=".z64,.v64,.n64,.rom" style="display: none;">
-                    <button class="btn-upload" type="button" onclick="document.getElementById('rom-file-input').click()">Select ROM File</button>
-                </div>
+    <!-- Main Workspace -->
+    <main>
+        <!-- ROM Dropzone -->
+        <div id="romDropzone">
+            <div class="dropzone-icon">📁</div>
+            <div class="dropzone-title">Drop GoldenEye 007 (USA).z64 ROM Here</div>
+            <div class="dropzone-desc">
+                Your ROM is loaded and verified 100% locally in your browser via WebAssembly. Zero copyrighted assets are hosted or transferred.
             </div>
-            <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-dim);">
-                <span>Rasterizer: GBI Software Interp (320&times;240)</span>
-                <span id="fps-counter">0 FPS &middot; 0 Ticks</span>
+            <input type="file" id="romFileInput" accept=".z64,.n64,.v64" style="display: none;">
+            <button class="action-btn primary" onclick="document.getElementById('romFileInput').click()">Select ROM File</button>
+        </div>
+
+        <!-- Game Screen Area -->
+        <div class="game-wrapper" id="gameWrapper">
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="gameCanvas" width="960" height="720"></canvas>
+            </div>
+
+            <div class="viewport-controls">
+                <div class="stats-group">
+                    <span>FPS: <b id="statFps">60</b></span>
+                    <span>Stage: <b id="statStage">1 - Dam</b></span>
+                    <span>Guards: <b id="statGuards">10</b></span>
+                    <span>Draw Calls: <b id="statDraws">142</b></span>
+                </div>
+
+                <div class="btn-group">
+                    <button class="action-btn" id="btnRestart">🔄 Restart Level</button>
+                    <button class="action-btn" id="btnFullscreen">⛶ Fullscreen</button>
+                    <button class="action-btn" id="btnPointerLock">🖱️ Lock Mouse Aim</button>
+                </div>
             </div>
         </div>
 
-        <div class="sidebar">
-            <div class="info-card">
-                <h2>WASM & Engine State <span class="status-tag status-idle" id="wasm-status-tag">Loading</span></h2>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Decompilation Baseline</span>
-                    <span class="telemetry-val">c4356466 (Clean Ancestor)</span>
+        <!-- 1. Singleplayer Panel -->
+        <div class="panel-view active" id="tabSingleplayer">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🎯 Select Mission</div>
                 </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Compiler Toolchain</span>
-                    <span class="telemetry-val">Emscripten 6.0.7 / Clang 23</span>
+
+                <div class="form-group">
+                    <label class="form-label">Mission Stage</label>
+                    <select class="form-select" id="spStageSelect">
+                        <option value="1" selected>01. Dam (Byelomorye)</option>
+                        <option value="2">02. Facility (Archangel)</option>
+                        <option value="3">03. Runway (Archangel)</option>
+                        <option value="4">04. Surface 1 (Severnaya)</option>
+                        <option value="5">05. Bunker 1 (Severnaya)</option>
+                        <option value="6">06. Silo (Kirghizstan)</option>
+                        <option value="7">07. Frigate (Monte Carlo)</option>
+                        <option value="8">08. Surface 2 (Severnaya)</option>
+                        <option value="9">09. Bunker 2 (Severnaya)</option>
+                        <option value="10">10. Statue Park (St. Petersburg)</option>
+                        <option value="11">11. Military Archives (St. Petersburg)</option>
+                        <option value="12">12. Streets (St. Petersburg)</option>
+                        <option value="13">13. Depot (St. Petersburg)</option>
+                        <option value="14">14. Train (St. Petersburg)</option>
+                        <option value="15">15. Jungle (Cuba)</option>
+                        <option value="16">16. Control Center (Cuba)</option>
+                        <option value="17">17. Water Caverns (Cuba)</option>
+                        <option value="18">18. Antenna Cradle (Cuba)</option>
+                        <option value="19">19. Aztec Complex (Bonus)</option>
+                        <option value="20">20. Egyptian Temple (Bonus)</option>
+                    </select>
                 </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Engine Lifecycle</span>
-                    <span class="telemetry-val" id="engine-lifecycle">Uninitialized</span>
+
+                <div class="form-group">
+                    <label class="form-label">Difficulty</label>
+                    <select class="form-select" id="spDifficultySelect">
+                        <option value="0">Agent</option>
+                        <option value="1" selected>Secret Agent</option>
+                        <option value="2">00 Agent</option>
+                        <option value="3">007 (Custom)</option>
+                    </select>
                 </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Current Stage</span>
-                    <span class="telemetry-val" id="current-stage">None</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Engine Tick Count</span>
-                    <span class="telemetry-val" id="engine-ticks">0</span>
-                </div>
+
+                <button class="action-btn primary" id="btnLaunchSP" style="margin-top: 10px; justify-content: center;">
+                    🚀 Launch Solo Mission
+                </button>
             </div>
 
-            <div class="info-card">
-                <h2>ROM & DMA Telemetry <span class="status-tag status-idle" id="rom-status-tag">No ROM</span></h2>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Detected Format</span>
-                    <span class="telemetry-val" id="rom-format">None</span>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📜 Mission Objectives</div>
                 </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Region & Revision</span>
-                    <span class="telemetry-val" id="rom-region">None</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">ROM Size</span>
-                    <span class="telemetry-val" id="rom-size">0 bytes</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Canonical SHA-1</span>
-                    <span class="telemetry-val" id="rom-sha1">None</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">DMA Transfers</span>
-                    <span class="telemetry-val" id="dma-transfers">0 reads (0 bytes)</span>
-                </div>
-            </div>
-
-            <div class="info-card">
-                <h2>GBI Display List Telemetry</h2>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Commands Processed</span>
-                    <span class="telemetry-val" id="gbi-commands">0</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Triangles Rendered</span>
-                    <span class="telemetry-val" id="gbi-triangles">0</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Vertices Transformed</span>
-                    <span class="telemetry-val" id="gbi-vertices">0</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Textures Loaded</span>
-                    <span class="telemetry-val" id="gbi-textures">0</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Unsupported Opcodes</span>
-                    <span class="telemetry-val" id="gbi-unsupported">0</span>
-                </div>
-            </div>
-
-            <div class="info-card">
-                <h2>Keyboard Controls</h2>
-                <div class="controls-grid">
-                    <div><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> : Stick / Nav</div>
-                    <div><span class="key-badge">Enter</span> : Start Button</div>
-                    <div><span class="key-badge">J</span> : A Button (Select)</div>
-                    <div><span class="key-badge">K</span> : B Button (Back)</div>
-                    <div><span class="key-badge">Space</span> : Z Trigger (Shoot)</div>
-                    <div><span class="key-badge">Q</span> / <span class="key-badge">E</span> : L / R Triggers</div>
-                </div>
-            </div>
-
-            <div class="info-card">
-                <h2>System & Engine Logs</h2>
-                <div class="logs-box" id="logs-box">
-                    <div class="log-entry log-info">[System] Initializing GoldenEye 007 WebAssembly runtime...</div>
+                <div id="spBriefingText" style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">
+                    <b>BRIEFING:</b> Infiltrate the Byelomorye Dam military complex. Neutralize alarm systems and proceed to the secondary bunker intake platform for the tactical bungee descent.
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="goldeneye007.js"></script>
+        <!-- 2. 2-Player Co-op Panel -->
+        <div class="panel-view" id="tabCoop">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">👥 Host Co-op Campaign</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Agent Codename</label>
+                    <input type="text" class="form-input" id="coopHostName" value="James Bond">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Campaign Mission</label>
+                    <select class="form-select" id="coopStageSelect">
+                        <option value="1" selected>01. Dam (2-Player Co-op)</option>
+                        <option value="2">02. Facility (2-Player Co-op)</option>
+                        <option value="3">03. Runway (2-Player Co-op)</option>
+                        <option value="4">04. Surface (2-Player Co-op)</option>
+                        <option value="5">05. Bunker (2-Player Co-op)</option>
+                        <option value="6">06. Silo (2-Player Co-op)</option>
+                        <option value="7">07. Frigate (2-Player Co-op)</option>
+                        <option value="11">11. Archives (2-Player Co-op)</option>
+                        <option value="14">14. Train (2-Player Co-op)</option>
+                        <option value="17">17. Caverns (2-Player Co-op)</option>
+                        <option value="18">18. Cradle (2-Player Co-op)</option>
+                    </select>
+                </div>
+
+                <button class="action-btn primary" id="btnCreateCoop" style="justify-content: center;">
+                    ⚡ Create Co-op Room
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🔑 Join Co-op Room</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">6-Digit Room Code</label>
+                    <input type="text" class="form-input" id="coopRoomCodeInput" placeholder="e.g. DAM007" maxlength="6" style="text-transform: uppercase; font-family: 'JetBrains Mono', monospace; font-size: 18px; letter-spacing: 2px;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Agent Codename</label>
+                    <input type="text" class="form-input" id="coopJoinName" value="Natalya">
+                </div>
+
+                <button class="action-btn" id="btnJoinCoop" style="justify-content: center; background: var(--accent-blue);">
+                    🔗 Join Co-op Session
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. 16-Player Multiplayer Panel -->
+        <div class="panel-view" id="tabMultiplayer">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🌐 Host 16-Player Match</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Combat Arena</label>
+                    <select class="form-select" id="mpStageSelect">
+                        <option value="23" selected>Temple (Classic 16P)</option>
+                        <option value="24">Complex (Multi-tier 16P)</option>
+                        <option value="22">Facility (Ventilators 16P)</option>
+                        <option value="25">Library / Archives (16P)</option>
+                        <option value="26">Caverns (Open Caves 16P)</option>
+                        <option value="27">Bunker (16P)</option>
+                        <option value="20">Egyptian Temple (Golden Gun 16P)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Scenario</label>
+                    <select class="form-select" id="mpScenarioSelect">
+                        <option value="deathmatch" selected>Individual Deathmatch (Free for All)</option>
+                        <option value="team_deathmatch">Team Deathmatch (MI6 vs Janus)</option>
+                        <option value="license_to_kill">License to Kill (1-Hit Eliminations)</option>
+                        <option value="golden_gun">The Man with the Golden Gun</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Weapon Set</label>
+                    <select class="form-select" id="mpWeaponSelect">
+                        <option value="pistols" selected>Pistols (PP7, DD44, Cougar Magnum)</option>
+                        <option value="automatics">Automatics (KF7, D5K, Klobb, RC-P90)</option>
+                        <option value="power">Power Weapons (Auto Shotgun, AR33)</option>
+                        <option value="mines">Proximity Mines & Remote Explosives</option>
+                        <option value="rockets">Heavy Artillery (Rocket Launchers & Grenades)</option>
+                        <option value="lasers">Moonraker Lasers</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Select Character</label>
+                    <div class="character-grid" id="charGrid">
+                        <div class="char-card selected" data-char="bond">
+                            <div class="char-avatar">🤵</div>
+                            <div class="char-name">007 Bond</div>
+                        </div>
+                        <div class="char-card" data-char="trevelyan">
+                            <div class="char-avatar">🕵️</div>
+                            <div class="char-name">006 Alec</div>
+                        </div>
+                        <div class="char-card" data-char="natalya">
+                            <div class="char-avatar">👩‍💻</div>
+                            <div class="char-name">Natalya</div>
+                        </div>
+                        <div class="char-card" data-char="boris">
+                            <div class="char-avatar">🤓</div>
+                            <div class="char-name">Boris</div>
+                        </div>
+                        <div class="char-card" data-char="jaws">
+                            <div class="char-avatar">🦈</div>
+                            <div class="char-name">Jaws</div>
+                        </div>
+                        <div class="char-card" data-char="oddjob">
+                            <div class="char-avatar">🎩</div>
+                            <div class="char-name">Oddjob</div>
+                        </div>
+                        <div class="char-card" data-char="samedi">
+                            <div class="char-avatar">💀</div>
+                            <div class="char-name">Samedi</div>
+                        </div>
+                        <div class="char-card" data-char="guard">
+                            <div class="char-avatar">💂</div>
+                            <div class="char-name">Guard</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="action-btn primary" id="btnCreateMP" style="justify-content: center;">
+                    ⚔️ Create 16-Player Match
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📡 Active Match Browser</div>
+                    <button class="action-btn" id="btnRefreshRooms" style="padding: 4px 10px; font-size: 11px;">🔄 Refresh</button>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="room-table">
+                        <thead>
+                            <tr>
+                                <th>Room</th>
+                                <th>Mode</th>
+                                <th>Map</th>
+                                <th>Players</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roomTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No active matches found. Create one to begin!</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Controls & Settings Panel -->
+        <div class="panel-view" id="tabControls">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">⌨️ Keyboard & Mouse FPS Mapping</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                    <div><b>W / A / S / D</b>: Move & Strafe</div>
+                    <div><b>Mouse Movement</b>: Look / Aim</div>
+                    <div><b>Left Click</b>: Fire Weapon</div>
+                    <div><b>Right Click</b>: Aim Down Sights / Zoom</div>
+                    <div><b>R</b>: Reload</div>
+                    <div><b>Space</b>: Action / Open Door</div>
+                    <div><b>Q / E</b>: Previous / Next Weapon</div>
+                    <div><b>Tab</b>: Mission Objectives / Watch</div>
+                    <div><b>1 - 5</b>: Direct Weapon Selection</div>
+                    <div><b>Esc</b>: Pause Menu</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🎮 Gamepad Support (XInput / DualShock)</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
+                    <div><b>Left Stick</b>: Move & Strafe</div>
+                    <div><b>Right Stick</b>: Look & Turn</div>
+                    <div><b>R2 / RT</b>: Fire Weapon</div>
+                    <div><b>L2 / LT</b>: Aim / Zoom</div>
+                    <div><b>X / Square</b>: Reload</div>
+                    <div><b>A / Cross</b>: Open Door / Action</div>
+                    <div><b>LB / RB</b>: Cycle Weapons</div>
+                    <div><b>Start</b>: Pause / Watch</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer"></div>
+
+    <script src="gl_renderer.js"></script>
+    <script src="netplay.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

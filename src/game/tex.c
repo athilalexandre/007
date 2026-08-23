@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <ultra64.h>
 #include "gbi_extension.h"
 #include "lightfixture.h"
@@ -808,7 +809,14 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
 
     while (count > 0)
     {
-        switch (*(u8 *)in)
+        u32 in_w0 = in->words.w0;
+        u32 in_w1 = in->words.w1;
+#if defined(TARGET_WEB) || defined(__wasm__)
+        in_w0 = __builtin_bswap32(in_w0);
+        in_w1 = __builtin_bswap32(in_w1);
+#endif
+        u8 cmd = (u8)(in_w0 >> 24);
+        switch (cmd)
         {
             case G_NOOP:
                 if (!syncEmitted)
@@ -823,7 +831,7 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
                     lightPending = FALSE;
                 }
 
-                texnum = in->words.w1 & 0xfff;
+                texnum = in_w1 & 0xfff;
 
                 if ((texnum == D_800483C4) && (D_800483C8 != NULL))
                 {
@@ -849,15 +857,15 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
                     out          = texWriteTextureCmd(out, saved, tex, writeTexFlag);
                     writeTexFlag = FALSE;
 
-                    switch (in->words.w0 & 7)
+                    switch (in_w0 & 7)
                     {
                         case TEXTURETYPE_LOD:
-                            min    = (in->words.w1 >> 24) & 0xff;
-                            smode  = (in->words.w0 >> 22) & 3;
-                            tmode  = (in->words.w0 >> 20) & 3;
-                            offset = (in->words.w0 >> 18) & 3;
-                            shifts = (in->words.w0 >> 14) & 0xf;
-                            shiftt = (in->words.w0 >> 10) & 0xf;
+                            min    = (in_w1 >> 24) & 0xff;
+                            smode  = (in_w0 >> 22) & 3;
+                            tmode  = (in_w0 >> 20) & 3;
+                            offset = (in_w0 >> 18) & 3;
+                            shifts = (in_w0 >> 14) & 0xf;
+                            shiftt = (in_w0 >> 10) & 0xf;
 
                             if ((D_800483C8 != NULL) && (D_800483C8[texnum].unk_0_0 == 0xff))
                             {
@@ -897,19 +905,19 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
                         {
                             struct tex *tex2;
 
-                            texnum2 = (in->words.w1 >> 12) & 0xfff;
+                            texnum2 = (in_w1 >> 12) & 0xfff;
 
                             texLoadFromTextureNum(texnum2, texpool);
                             tex2 = texFindInPool(texnum2, texpool);
 
                             if (tex2 != NULL)
                             {
-                                min    = ((*in).words.w1 >> 24) & 0xff;
-                                smode  = (in->words.w0 >> 22) & 3;
-                                tmode  = (in->words.w0 >> 20) & 3;
-                                offset = (in->words.w0 >> 18) & 3;
-                                shifts = (in->words.w0 >> 14) & 0xf;
-                                shiftt = (in->words.w0 >> 10) & 0xf;
+                                min    = (in_w1 >> 24) & 0xff;
+                                smode  = (in_w0 >> 22) & 3;
+                                tmode  = (in_w0 >> 20) & 3;
+                                offset = (in_w0 >> 18) & 3;
+                                shifts = (in_w0 >> 14) & 0xf;
+                                shiftt = (in_w0 >> 10) & 0xf;
 
                                 out = texHandleType1(out, tex, smode, tmode, offset, tex2, shifts, shiftt, min);
                             }
@@ -917,9 +925,9 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
                         }
 
                         case TEXTURETYPE_MIPMAP:
-                            smode  = (in->words.w0 >> 22) & 3;
-                            tmode  = (in->words.w0 >> 20) & 3;
-                            offset = (in->words.w0 >> 18) & 3;
+                            smode  = (in_w0 >> 22) & 3;
+                            tmode  = (in_w0 >> 20) & 3;
+                            offset = (in_w0 >> 18) & 3;
 
                             if (valid)
                             {
@@ -944,16 +952,16 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
                             break;
 
                         case TEXTURETYPE_TILE:
-                            smode  = (in->words.w0 >> 22) & 3;
-                            tmode  = (in->words.w0 >> 20) & 3;
-                            offset = (in->words.w0 >> 18) & 3;
+                            smode  = (in_w0 >> 22) & 3;
+                            tmode  = (in_w0 >> 20) & 3;
+                            offset = (in_w0 >> 18) & 3;
                             out    = texHandleType3(out, tex, smode, tmode, offset);
                             break;
 
                         case TEXTURETYPE_TILE_PRESWAPPED:
-                            smode  = (in->words.w0 >> 22) & 3;
-                            tmode  = (in->words.w0 >> 20) & 3;
-                            offset = (in->words.w0 >> 18) & 3;
+                            smode  = (in_w0 >> 22) & 3;
+                            tmode  = (in_w0 >> 20) & 3;
+                            offset = (in_w0 >> 18) & 3;
                             out    = texHandleType4(out, tex, smode, tmode, offset);
                             break;
                     }
@@ -989,42 +997,85 @@ s32 texLoadFromGdl(Gfx *src, s32 srcsize, Gfx *dst, void *texpool)
 
             case G_RDPPIPESYNC:
                 syncEmitted = TRUE;
+#if defined(TARGET_WEB) || defined(__wasm__)
+                out->words.w0 = in_w0;
+                out->words.w1 = in_w1;
+                out++;
+                in++;
+#else
                 *(out++)    = *(in++);
+#endif
                 break;
 
             case 0xb1:
             case 0xbf:
                 writeTexFlag = TRUE;
                 syncEmitted  = FALSE;
+#if defined(TARGET_WEB) || defined(__wasm__)
+                out->words.w0 = in_w0;
+                out->words.w1 = in_w1;
+                out++;
+                in++;
+#else
                 *(out++)     = *(in++);
+#endif
                 break;
 
             case 0xbb:
                 saved        = out;
                 writeTexFlag = FALSE;
+#if defined(TARGET_WEB) || defined(__wasm__)
+                out->words.w0 = in_w0;
+                out->words.w1 = in_w1;
+                out++;
+                in++;
+#else
                 *(out++)     = *(in++);
+#endif
                 break;
 
             case 0xba:
                 if (valid)
                 {
-                    if ((((*(((s8 *)in) + 2)) == 17) || ((*(((s8 *)in) + 2)) == 20)) || ((*(((s8 *)in) + 2)) == 16))
+                    u8 byte2 = (u8)(in_w0 >> 8);
+                    if ((byte2 == 17) || (byte2 == 20) || (byte2 == 16))
                     {
                         in++;
                     }
                     else
                     {
+#if defined(TARGET_WEB) || defined(__wasm__)
+                        out->words.w0 = in_w0;
+                        out->words.w1 = in_w1;
+                        out++;
+                        in++;
+#else
                         *(out++) = *(in++);
+#endif
                     }
                 }
                 else
                 {
+#if defined(TARGET_WEB) || defined(__wasm__)
+                    out->words.w0 = in_w0;
+                    out->words.w1 = in_w1;
+                    out++;
+                    in++;
+#else
                     *(out++) = *(in++);
+#endif
                 }
                 break;
 
             default:
+#if defined(TARGET_WEB) || defined(__wasm__)
+                out->words.w0 = in_w0;
+                out->words.w1 = in_w1;
+                out++;
+                in++;
+#else
                 *(out++) = *(in++);
+#endif
                 break;
         }
 

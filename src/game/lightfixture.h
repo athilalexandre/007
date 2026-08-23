@@ -16,8 +16,11 @@ struct s_darkened_light {
     u16 vtx_index;
 };
 
+void lightFixtureInitTables(void);
 void lightFixtureEntryEnd(Gfx *param_1);
 bool check_if_imageID_is_light(s32 imageID);
 void lightFixtureEntryBegin(Gfx *DL);
+void redarken_lights_in_room(s32 room_index);
+void clear_light_fixturetable_in_room(s32 room_index);
 
 #endif

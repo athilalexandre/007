@@ -865,6 +865,10 @@ u8 _efontchardataSegmentRomStart[1] = {0};
 u8 _animation_entriesSegmentRomStart[1] = {0};
 u8 _animation_dataSegmentRomStart[1] = {0};
 u8 _imagesSegmentRomStart[1] = {0};
+u8 _rarewarelogoSegmentRomStart[1] = {0};
+u8 _rarewarelogoSegmentRomEnd[1] = {0};
+u8 _rarewarelogoSegmentStart[1] = {0};
+u8 _rarewarelogoSegmentEnd[1] = {0};
 u8 _gameSegmentRomStart[1] = {0};
 u8 _animation_dataSegmentStart[1] = {0};
 u8 _animation_dataSegmentEnd[1] = {0};
@@ -1657,3 +1661,9 @@ u32 rom_resolver_get_resource_size(s32 index) {
     }
     return 0;
 }
+
+u8 _sfxctlSegmentRomStart[1] = {0};
+u8 _sfxtblSegmentRomStart[1] = {0};
+u8 _instrumentsctlSegmentRomStart[1] = {0};
+u8 _instrumentstblSegmentRomStart[1] = {0};
+u8 _musicsampletblSegmentRomStart[1] = {0};

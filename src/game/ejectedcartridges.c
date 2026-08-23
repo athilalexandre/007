@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <ultra64.h>
 #include "ejectedcartridges.h"
 #include "bondtypes.h"

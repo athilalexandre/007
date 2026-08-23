@@ -815,11 +815,10 @@ void musicTrack1Play(s32 track)
 
     romAddress = g_musicDataTable->seqArray[g_musicXTrack1CurrentTrackNum].address;
 
-    if (romAddress < (void*)ROM_MUSIC_START_OFFSET)
-    {
-        // Note: recursive call
-        musicTrack1Play(M_SHORT_SOLO_DEATH);
-
+    if (romAddress < (void*)ROM_MUSIC_START_OFFSET) {
+        if (track != M_SHORT_SOLO_DEATH) {
+            musicTrack1Play(M_SHORT_SOLO_DEATH);
+        }
         return;
     }
 
@@ -1004,11 +1003,10 @@ void musicTrack2Play(s32 track)
 
     romAddress = g_musicDataTable->seqArray[g_musicXTrack2CurrentTrackNum].address;
 
-    if (romAddress < (void*)ROM_MUSIC_START_OFFSET)
-    {
-        // Note: recursive call
-        musicTrack2Play(M_SHORT_SOLO_DEATH);
-
+    if (romAddress < (void*)ROM_MUSIC_START_OFFSET) {
+        if (track != M_SHORT_SOLO_DEATH) {
+            musicTrack2Play(M_SHORT_SOLO_DEATH);
+        }
         return;
     }
 
@@ -1193,11 +1191,10 @@ void musicTrack3Play(s32 track)
 
     romAddress = g_musicDataTable->seqArray[g_musicXTrack3CurrentTrackNum].address;
 
-    if (romAddress < (void*)ROM_MUSIC_START_OFFSET)
-    {
-        // Note: recursive call
-        musicTrack3Play(M_SHORT_SOLO_DEATH);
-
+    if (romAddress < (void*)ROM_MUSIC_START_OFFSET) {
+        if (track != M_SHORT_SOLO_DEATH) {
+            musicTrack3Play(M_SHORT_SOLO_DEATH);
+        }
         return;
     }
 

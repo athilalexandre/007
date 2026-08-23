@@ -3084,6 +3084,42 @@ void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 ori
     delta = ((s32) newBase) - origBase;
     stan_prefix = file;
     
+#if defined(TARGET_WEB) || defined(__wasm__)
+    u32 *room_offsets = (u32 *)&file->ptr_firstroom;
+    while (*room_offsets != 0) {
+        u32 off = *room_offsets;
+        if (off > 0x00FFFFFF) {
+            off = __builtin_bswap32(off);
+        }
+        *room_offsets = (u32)newBase + off;
+        room_offsets++;
+    }
+    standTileStart = (StandTile *)(((s32)file->ptr_firstroom) - 0x80);
+    ptr_firstroom_0 = (s32)file->ptr_firstroom;
+    
+    tile = (StandTile *)(room_offsets + 1);
+    while (*(u32 *)tile != 0) {
+        stanTileEnd = tile;
+        u16 raw_tail = (u16)tile->tail.half;
+        u8 ptCount = (raw_tail >> 12) & 0xF;
+        if (ptCount == 0 || ptCount > 10) {
+            raw_tail = __builtin_bswap16(raw_tail);
+            tile->tail.half = raw_tail;
+            tile->mid.half = __builtin_bswap16(tile->mid.half);
+            ptCount = (raw_tail >> 12) & 0xF;
+        }
+        if (ptCount > 10) ptCount = 3;
+        
+        for (int i = 0; i < ptCount; i++) {
+            s16 *coords = (s16 *)&tile->points[i];
+            coords[0] = (s16)__builtin_bswap16((u16)coords[0]);
+            coords[1] = (s16)__builtin_bswap16((u16)coords[1]);
+            coords[2] = (s16)__builtin_bswap16((u16)coords[2]);
+            coords[3] = (s16)__builtin_bswap16((u16)coords[3]);
+        }
+        tile = (StandTile *)((s32)tile + list_of_tilesizes[ptCount]);
+    }
+#else
     #ifdef DEBUG
     assert(*r==0);
     #endif
@@ -3120,6 +3156,7 @@ void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 ori
         } 
         while (*(s32 *) tile != 0);
     }
+#endif
     
     stan_prefix = file;
 }
@@ -3179,7 +3216,7 @@ s32 sub_GAME_7F0B3044(void) {
     f32 temp_f0;
 
     sp1C = 0;
-    if (((dynGetFreeGfx() < 0x1000) || (dynGetFreeVtx() < 0x1000)) && (*D_800413D0 == 0)) {
+    if (((dynGetFreeGfx(NULL) < 0x1000) || (dynGetFreeVtx() < 0x1000)) && (*D_800413D0 == 0)) {
         D_800413C0 = 0.0f;
         D_800413C4 = 0.0f;
         D_800413C8 = D_800413CC;

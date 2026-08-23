@@ -111,6 +111,7 @@ u32 texReadBits(s32 bitCount)
 
 
 
+#if !defined(TARGET_WEB) && !defined(__wasm__)
 extern u32* _GlobalimagetableSegmentStart;
 extern u32* _GlobalimagetableSegmentEnd;
 extern void* s_genericimage;
@@ -163,7 +164,81 @@ extern Gfx* globalDL_0x858;
 extern Gfx* globalDL_0x900;
 extern Gfx* globalDL_0x9a8;
 extern Gfx* globalDL_0xa50;
+#endif
 
+#if defined(TARGET_WEB) || defined(__wasm__)
+#include <assets/oddtextures.h>
+
+void texReset(void)
+{
+    s32 i;
+
+    oddtextures_reset();
+
+    genericimage = (struct sImageTableEntry *)s_genericimage;
+    impactimages = (struct sImageTableEntry *)s_impactimages;
+    explosion_smokeimages = (struct sImageTableEntry *)s_explosion_smokeimages;
+    scattered_explosions = (struct sImageTableEntry *)s_scattered_explosions;
+    flareimage1 = (struct sImageTableEntry *)s_flareimage1;
+    flareimage2 = (struct sImageTableEntry *)s_flareimage2;
+    flareimage3 = (struct sImageTableEntry *)s_flareimage3;
+    flareimage4 = (struct sImageTableEntry *)s_flareimage4;
+    flareimage5 = (struct sImageTableEntry *)s_flareimage5;
+    ammo9mmimage = (struct sImageTableEntry *)s_ammo9mmimage;
+    rifleammoimage = (struct sImageTableEntry *)s_rifleammoimage;
+    shotgunammoimage = (struct sImageTableEntry *)s_shotgunammoimage;
+    knifeammoimage = (struct sImageTableEntry *)s_knifeammoimage;
+    glaunchammoimage = (struct sImageTableEntry *)s_glammoimage;
+    rocketammoimage = (struct sImageTableEntry *)s_rocketammoimage;
+    genericmineammoimage = (struct sImageTableEntry *)s_genericmineammoimage;
+    grenadeammoimage = (struct sImageTableEntry *)s_grenadeammoimage;
+    magnumammoimage = (struct sImageTableEntry *)s_magnumammoimage;
+    goldengunammoimage = (struct sImageTableEntry *)s_goldengunammoimage;
+    remotemineammoimage = (struct sImageTableEntry *)s_remotemineammoimage;
+    timedmineammoimage = (struct sImageTableEntry *)s_timedmineammoimage;
+    proxmineammoimage = (struct sImageTableEntry *)s_proxmineammoimage;
+    tankammoimage = (struct sImageTableEntry *)s_tankammoimage;
+    crosshairimage = (struct sImageTableEntry *)s_crosshairimage;
+    betacrosshairimage = (struct sImageTableEntry *)s_betacrosshairimage;
+    glassoverlayimage = (struct sImageTableEntry *)s_glassoverlayimage;
+    monitorimages = (struct sImageTableEntry *)s_monitorimages;
+    skywaterimages = (struct sImageTableEntry *)s_skywaterimages;
+    mainfolderimages = (struct sImageTableEntry *)s_mainfolderimages;
+    mpradarimages = (struct sImageTableEntry *)s_mpradarimages;
+    mpcharselimages = (struct sImageTableEntry *)s_mpcharselimages;
+    mpstageselimages = (struct sImageTableEntry *)s_mpstageselimages;
+
+    texLoadFromDisplayList(&globalDL_0x000, 0);
+    texLoadFromDisplayList(&globalDL_0x078, 0);
+    texLoadFromDisplayList(&globalDL_0x120, 0);
+    texLoadFromDisplayList(&globalDL_0x1c8, 0);
+    texLoadFromDisplayList(&globalDL_0x270, 0);
+    texLoadFromDisplayList(&globalDL_0x318, 0);
+    texLoadFromDisplayList(&globalDL_0x3c0, 0);
+    texLoadFromDisplayList(&globalDL_0x468, 0);
+    texLoadFromDisplayList(&globalDL_0x510, 0);
+    texLoadFromDisplayList(&globalDL_0x5b8, 0);
+    texLoadFromDisplayList(&globalDL_0x660, 0);
+    texLoadFromDisplayList(&globalDL_0x708, 0);
+    texLoadFromDisplayList(&globalDL_0x7b0, 0);
+    texLoadFromDisplayList(&globalDL_0x858, 0);
+    texLoadFromDisplayList(&globalDL_0x900, 0);
+    texLoadFromDisplayList(&globalDL_0x9a8, 0);
+    texLoadFromDisplayList(&globalDL_0xa50, 0);
+
+    texLoad(genericimage, 0);
+
+    for (i=0; i < 6; i++)
+    {
+        texLoad(&explosion_smokeimages[i], 0);
+    }
+
+    for (i=0; i < 5; i++)
+    {
+        texLoad(&scattered_explosions[i], 0);
+    }
+}
+#else
 void texReset(void)
 {
     u32 size;
@@ -239,3 +314,4 @@ void texReset(void)
         texLoad(&scattered_explosions[i], 0);
     }
 }
+#endif

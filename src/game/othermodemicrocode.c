@@ -359,13 +359,28 @@ void texSelect(Gfx **gdlptr, struct sImageTableEntry *tconfig, u32 arg2, s32 arg
         width = tconfig->width;
         height = tconfig->height;
         
-        if ((u32) tconfig->index < NUM_TEXTURES)
+        s32 texnum = (s32)(uintptr_t)tconfig->index;
+        if ((u32) texnum < NUM_TEXTURES)
         {
             texLoad((s32 *)tconfig, NULL);
+            tex = texFindInPool(texnum, NULL);
         }
 
-        aa = PHYS_TO_K0(tconfig->index);
-        tex = texFindInPool((aa)[-4], NULL);
+        if (tex == NULL)
+        {
+            struct texpool *pool = &ptr_texture_alloc_start;
+            struct tex *cur = pool->rightpos;
+            struct tex *end = pool->end;
+            while (cur < end)
+            {
+                if (cur->data == (u8 *)tconfig->index || (texnum < NUM_TEXTURES && cur->texturenum == texnum))
+                {
+                    tex = cur;
+                    break;
+                }
+                cur++;
+            }
+        }
 
         if (tconfig->level == 0)
         {

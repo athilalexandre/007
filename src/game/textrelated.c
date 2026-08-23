@@ -137,9 +137,6 @@ void load_font_tables(void)
         u32 offset = __builtin_bswap32((uintptr_t)ptrFontZurichBoldChars[i].pixeldata);
         ptrFontZurichBoldChars[i].pixeldata = (u8 *)ptrFontZurichBold + offset;
     }
-            ptrFontZurichBold, ptrFontZurichBoldChars,
-        ptrFontZurichBoldChars[0].width, ptrFontZurichBoldChars[0].height,
-        ptrFontZurichBoldChars[0].baseline, ptrFontZurichBoldChars[0].pixeldata);
 #endif
 }
 
@@ -419,7 +416,8 @@ Gfx *textRender(Gfx *gdl, s32 *x, s32 *y, char *text,
 			text++;
 			*x = savedx;
 		} else if (*text < 0x80) {
-						prevchar = *text;
+			gdl = textRenderGlyph(gdl, x, y, &chars[*text - 0x21], &chars[prevchar - 0x21], font, savedx, savedy, width, height, yOffset);
+			prevchar = *text;
 			text++;
 		} else {
 			u16 codepoint = ((*text & 0x7f) << 7) | (text[1] & 0x7f);

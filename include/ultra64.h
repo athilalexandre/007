@@ -16,5 +16,6 @@
 #include <PR/libultra.h>
 #include <PR/sptask.h>
 #include <PR/ucode.h>
+#include <src/game/signatures.h>
 
 #endif

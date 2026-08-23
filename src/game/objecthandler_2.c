@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <ultra64.h>
 #include <bondgame.h>
 #include "objecthandler.h"
@@ -11,6 +12,7 @@
 
 void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct texpool *buffer)
 {
+    printf("[sub_GAME_7F0762E0] name=%s dst=%p buffer=%p\n", name, dst, buffer); fflush(stdout);
     ModelNode *node;
     s32 romremaining;
     Gfx *gdl;
@@ -46,7 +48,9 @@ void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct tex
         
         texCopyGdls((Gfx *) (((u8 *) objheader->Switches) + (((u32) gdl) & 0x00ffffff)), (Gfx *) ((romremaining + filedata) - (s32) name), (s32) name);
 
+        printf("[sub_GAME_7F0762E0] before texLoadFromModelFileHeader\n"); fflush(stdout);
         texLoadFromModelFileHeader(objheader, buffer);
+        printf("[sub_GAME_7F0762E0] after texLoadFromModelFileHeader\n"); fflush(stdout);
 
         if (node != 0)
         {
@@ -71,10 +75,13 @@ void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct tex
                 }
                 
                 modelNodeReplaceGdl((u32) objheader, curnode, curgdl, (Gfx *) replacementgdl);
-                
-                replacementgdl += texLoadFromGdl( (Gfx *) ((((u8 *) objheader->Switches) + (((u32) curgdl) & 0x00ffffff)) + delta), (s32) name, (Gfx *) (((u8 *) objheader->Switches) + (replacementgdl & 0x00ffffff)), buffer);
+                printf("[sub_GAME_7F0762E0] calling texLoadFromGdl srcsize=%d replacementgdl=0x%x\n", (s32)name, replacementgdl); fflush(stdout);
+                s32 written = texLoadFromGdl( (Gfx *) ((((u8 *) objheader->Switches) + (((u32) curgdl) & 0x00ffffff)) + delta), (s32) name, (Gfx *) (((u8 *) objheader->Switches) + (replacementgdl & 0x00ffffff)), buffer);
+                printf("[sub_GAME_7F0762E0] texLoadFromGdl returned written=%d\n", written); fflush(stdout);
+                replacementgdl += written;
             } 
             while (node != 0);
+            printf("[sub_GAME_7F0762E0] loop finished\n"); fflush(stdout);
         }
 
         name = (u8 *) (((s32) (((u8 *) objheader->Switches) + (replacementgdl & 0x00ffffff))) - filedata);
