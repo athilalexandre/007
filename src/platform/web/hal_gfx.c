@@ -1,4 +1,5 @@
 #include "hal_gfx.h"
+#include <ultra64.h>
 #include <PR/gbi.h>
 #include "gbi_extension.h"
 #include <string.h>
@@ -10,52 +11,97 @@
 #define SCREEN_HEIGHT 240
 #define MAX_MODELVIEW_STACK 32
 
-/* GBI command opcodes */
+/* Authentic F3DEX 1 (GoldenEye 007) Command Opcodes */
+#undef G_SPNOOP
+#undef G_MTX
+#undef G_MOVEMEM
+#undef G_VTX
+#undef G_DL
+#undef G_TRI1
+#undef G_TRI2
+#undef G_TRI4
+#undef G_LINE3D
+#undef G_CLEARGEOMETRYMODE
+#undef G_SETGEOMETRYMODE
+#undef G_ENDDL
+#undef G_SETOTHERMODE_L
+#undef G_SETOTHERMODE_H
+#undef G_TEXTURE
+#undef G_MOVEWORD
+#undef G_POPMTX
+#undef G_CULLDL
+
 #define G_SPNOOP            0x00
 #define G_MTX               0x01
-#define G_POPMTX            0x02
 #define G_MOVEMEM           0x03
-#define G_MOVEWORD          0x04
-#define G_TEXTURE           0x05
-#define G_SETOTHERMODE_H    0xE3
-#define G_SETOTHERMODE_L    0xE2
-#define G_ENDDL             0xDF
-#define G_SETGEOMETRYMODE   0xD9
-#define G_CLEARGEOMETRYMODE 0xD8
-#define G_LINE3D            0xD5
-#define G_RDPHALF_1         0xD4
-#define G_RDPHALF_2         0xD3
-#define G_RDPHALF_CONT      0xD2
-#define G_TRI4              0xB1
-#define G_TRI1              0xBF
-#define G_TRI2              0xB8
 #define G_VTX               0x04
-#define G_DL                0xDE
-#define G_SETTIMG           0xFD
-#define G_SETCOMBINE        0xFC
-#define G_SETENVCOLOR       0xFB
-#define G_SETPRIMCOLOR      0xFA
-#define G_SETBLENDCOLOR     0xF9
-#define G_SETFOGCOLOR       0xF8
-#define G_SETFILLCOLOR      0xF7
-#define G_FILLRECT          0xF6
-#define G_SETTILE           0xF5
-#define G_LOADTILE          0xF4
-#define G_LOADBLOCK         0xF3
-#define G_SETTILESIZE       0xF2
-#define G_LOADTLUT          0xF0
-#define G_RDPSETOTHERMODE   0xEF
-#define G_SETPRIMDEPTH      0xEE
-#define G_SETSCISSOR        0xED
-#define G_SETCONVERT        0xEC
-#define G_SETKEYR           0xEB
-#define G_SETKEYGB          0xEA
-#define G_RDPFULLSYNC       0xE9
-#define G_RDPTILESYNC       0xE8
-#define G_RDPPIPESYNC       0xE7
-#define G_RDPLOADSYNC       0xE6
-#define G_TEXRECTFLIP       0xE5
+#define G_DL                0x06
+#define G_TRI4              0xB1
+#define G_TRI2              0xB1
+#define G_LINE3D            0xB5
+#define G_CLEARGEOMETRYMODE 0xB6
+#define G_SETGEOMETRYMODE   0xB7
+#define G_ENDDL             0xB8
+#define G_SETOTHERMODE_L    0xB9
+#define G_SETOTHERMODE_H    0xBA
+#define G_TEXTURE           0xBB
+#define G_MOVEWORD          0xBC
+#define G_POPMTX            0xBD
+#define G_CULLDL            0xBE
+#define G_TRI1              0xBF
+
+/* RDP Command Opcodes */
+#undef G_TEXRECT
+#undef G_TEXRECTFLIP
+#undef G_RDPLOADSYNC
+#undef G_RDPPIPESYNC
+#undef G_RDPTILESYNC
+#undef G_RDPFULLSYNC
+#undef G_SETKEYGB
+#undef G_SETKEYR
+#undef G_SETCONVERT
+#undef G_SETSCISSOR
+#undef G_SETPRIMDEPTH
+#undef G_RDPSETOTHERMODE
+#undef G_LOADTLUT
+#undef G_SETTILESIZE
+#undef G_LOADBLOCK
+#undef G_LOADTILE
+#undef G_SETTILE
+#undef G_FILLRECT
+#undef G_SETFILLCOLOR
+#undef G_SETFOGCOLOR
+#undef G_SETBLENDCOLOR
+#undef G_SETPRIMCOLOR
+#undef G_SETENVCOLOR
+#undef G_SETCOMBINE
+#undef G_SETTIMG
+
 #define G_TEXRECT           0xE4
+#define G_TEXRECTFLIP       0xE5
+#define G_RDPLOADSYNC       0xE6
+#define G_RDPPIPESYNC       0xE7
+#define G_RDPTILESYNC       0xE8
+#define G_RDPFULLSYNC       0xE9
+#define G_SETKEYGB          0xEA
+#define G_SETKEYR           0xEB
+#define G_SETCONVERT        0xEC
+#define G_SETSCISSOR        0xED
+#define G_SETPRIMDEPTH      0xEE
+#define G_RDPSETOTHERMODE   0xEF
+#define G_LOADTLUT          0xF0
+#define G_SETTILESIZE       0xF2
+#define G_LOADBLOCK         0xF3
+#define G_LOADTILE          0xF4
+#define G_SETTILE           0xF5
+#define G_FILLRECT          0xF6
+#define G_SETFILLCOLOR      0xF7
+#define G_SETFOGCOLOR       0xF8
+#define G_SETBLENDCOLOR     0xF9
+#define G_SETPRIMCOLOR      0xFA
+#define G_SETENVCOLOR       0xFB
+#define G_SETCOMBINE        0xFC
+#define G_SETTIMG           0xFD
 
 #define M_COLOR_R(c) (((c) >> 24) & 0xFF)
 #define M_COLOR_G(c) (((c) >> 16) & 0xFF)
@@ -109,6 +155,8 @@ static GbiTile s_Tiles[8];
 static const u8 *s_CurrentTextureImage = NULL;
 static u32 s_TextureImageWidth = 0;
 
+static const void *s_Segments[16] = {0};
+
 static void mtx_identity(float m[4][4]) {
     memset(m, 0, 16 * sizeof(float));
     m[0][0] = m[1][1] = m[2][2] = m[3][3] = 1.0f;
@@ -149,8 +197,12 @@ static void update_mvp(void) {
 static const void *resolve_seg_address(u32 addr) {
     u32 seg = (addr >> 24) & 0x0F;
     u32 off = addr & 0x00FFFFFF;
-    (void)seg;
-    (void)off;
+    if (seg > 0 && seg < 16) {
+        if (s_Segments[seg] == NULL) {
+            return NULL;
+        }
+        return (const void *)((uintptr_t)s_Segments[seg] + off);
+    }
     return (const void *)(uintptr_t)addr;
 }
 
@@ -272,7 +324,6 @@ static void draw_tex_rect(int ulx, int uly, int lrx, int lry, float s, float t, 
 static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
     if (!dl || depth > 16) return;
     if ((uintptr_t)dl < 0x1000 || (uintptr_t)dl > 0x10000000) return;
-    if (!dl || depth > 16) return;
 
     const Gfx *cur = dl;
     while (!end || cur < end) {
@@ -280,12 +331,20 @@ static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
         u32 w0 = cur->words.w0;
         u32 w1 = cur->words.w1;
         u8 opcode = (w0 >> 24) & 0xFF;
-        // osSyncPrintf("[GFX_DL] cur=%p op=0x%02X w0=0x%08X w1=0x%08X\n", cur, opcode, w0, w1);
 
         if (opcode == G_SPNOOP) {
             /* No-op */
         } else if (opcode == G_RDPPIPESYNC || opcode == G_RDPTILESYNC || opcode == G_RDPLOADSYNC || opcode == G_RDPFULLSYNC) {
             /* Syncs handled */
+        } else if (opcode == (u8)G_MOVEWORD) {
+            u8 index = w0 & 0xFF;
+            u16 offset = (w0 >> 8) & 0xFFFF;
+            if (index == G_MW_SEGMENT) {
+                u32 seg = (offset >> 2) & 0x0F;
+                if (seg < 16) {
+                    s_Segments[seg] = (const void *)(uintptr_t)w1;
+                }
+            }
         } else if (opcode == G_SETTIMG) {
             s_CurrentTextureImage = (const u8 *)resolve_seg_address(w1);
             s_TextureImageWidth = (w0 & 0x0FFF) + 1;
@@ -306,7 +365,7 @@ static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
             int lry = (w0) & 0x0FFF;
             int ulx = (w1 >> 12) & 0x0FFF;
             int uly = (w1) & 0x0FFF;
-            osSyncPrintf("[FILLRECT] ulx=%d uly=%d lrx=%d lry=%d color=0x%08X\n", ulx, uly, lrx, lry, s_FillColor); draw_fill_rect(ulx, uly, lrx, lry);
+            draw_fill_rect(ulx, uly, lrx, lry);
         } else if (opcode == G_SETSCISSOR) {
             s_ScissorLeft = ((w0 >> 12) & 0x0FFF) >> 2;
             s_ScissorTop = (w0 & 0x0FFF) >> 2;
@@ -355,7 +414,7 @@ static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
             u32 count = (w1 >> 14) & 0x03FF;
             u32 numBytes = (count + 1) * 2;
             if (numBytes > 512) numBytes = 512;
-            if (s_CurrentTextureImage) {
+            if (s_CurrentTextureImage && (uintptr_t)s_CurrentTextureImage >= 0x1000) {
                 memcpy(s_Tmem + 0x800, s_CurrentTextureImage, numBytes);
             }
         } else if (opcode == G_TEXRECT || opcode == G_TEXRECTFLIP) {
@@ -373,8 +432,7 @@ static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
             draw_tex_rect(ulx, uly, lrx, lry, s, t, dsdx, dtdy);
         } else if (opcode == (u8)G_MTX) {
             const Mtx *srcMtx = (const Mtx *)resolve_seg_address(w1);
-            if ((uintptr_t)srcMtx < 0x1000 || (uintptr_t)srcMtx > 0x10000000) srcMtx = NULL;
-            if (!srcMtx) { cur++; continue; }
+            if (!srcMtx || (uintptr_t)srcMtx < 0x1000 || (uintptr_t)srcMtx > 0x10000000) { cur++; continue; }
             float mat[4][4];
             mtx_fixed_to_float(mat, srcMtx);
 
@@ -397,11 +455,14 @@ static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
             if (s_ModelviewTop > 0) s_ModelviewTop--;
             s_MvpDirty = 1;
         } else if (opcode == (u8)G_VTX) {
-            u32 numVtx = (w0 >> 19) & 0x1F;
-            u32 v0 = (w0 >> 24) & 0x0F;
+            u32 numVtx = (w0 >> 10) & 0x3F;
+            u32 v0 = ((w0 >> 16) & 0xFF) / 2;
+            if (numVtx == 0) {
+                numVtx = (w0 >> 19) & 0x1F;
+                v0 = (w0 >> 24) & 0x0F;
+            }
             const Vtx *vtxList = (const Vtx *)resolve_seg_address(w1);
-            if ((uintptr_t)vtxList < 0x1000 || (uintptr_t)vtxList > 0x10000000) vtxList = NULL;
-            if (!vtxList) { cur++; continue; }
+            if (!vtxList || (uintptr_t)vtxList < 0x1000 || (uintptr_t)vtxList > 0x10000000) { cur++; continue; }
 
             update_mvp();
 
@@ -432,25 +493,30 @@ static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
                 dst->a = src->v.cn[3];
             }
         } else if (opcode == (u8)G_TRI1) {
-            u32 idx0 = ((w0 >> 16) & 0xFF) / 10;
-            u32 idx1 = ((w0 >> 8) & 0xFF) / 10;
-            u32 idx2 = (w0 & 0xFF) / 10;
+            u32 idx0 = ((w1 >> 16) & 0xFF) / 2;
+            u32 idx1 = ((w1 >> 8) & 0xFF) / 2;
+            u32 idx2 = (w1 & 0xFF) / 2;
+            if (idx0 == 0 && idx1 == 0 && idx2 == 0) {
+                idx0 = ((w0 >> 16) & 0xFF) / 10;
+                idx1 = ((w0 >> 8) & 0xFF) / 10;
+                idx2 = (w0 & 0xFF) / 10;
+            }
             if (idx0 < 64 && idx1 < 64 && idx2 < 64) {
                 rasterize_triangle(&s_VertexCache[idx0], &s_VertexCache[idx1], &s_VertexCache[idx2]);
             }
         } else if (opcode == (u8)G_TRI4) {
             u32 x1 = (w1 >> 0) & 0x0F;
             u32 y1 = (w1 >> 4) & 0x0F;
-            u32 z1 = (w1 >> 8) & 0x0F;
-            u32 x2 = (w1 >> 12) & 0x0F;
-            u32 y2 = (w1 >> 16) & 0x0F;
-            u32 z2 = (w1 >> 20) & 0x0F;
-            u32 x3 = (w1 >> 24) & 0x0F;
-            u32 y3 = (w1 >> 28) & 0x0F;
-            u32 z3 = (w0 >> 0) & 0x0F;
-            u32 x4 = (w0 >> 6) & 0x0F;
-            u32 y4 = (w0 >> 12) & 0x0F;
-            u32 z4 = (w0 >> 18) & 0x0F;
+            u32 z1 = (w0 >> 0) & 0x0F;
+            u32 x2 = (w1 >> 8) & 0x0F;
+            u32 y2 = (w1 >> 12) & 0x0F;
+            u32 z2 = (w0 >> 4) & 0x0F;
+            u32 x3 = (w1 >> 16) & 0x0F;
+            u32 y3 = (w1 >> 20) & 0x0F;
+            u32 z3 = (w0 >> 8) & 0x0F;
+            u32 x4 = (w1 >> 24) & 0x0F;
+            u32 y4 = (w1 >> 28) & 0x0F;
+            u32 z4 = (w0 >> 12) & 0x0F;
 
             if (x1 || y1 || z1) rasterize_triangle(&s_VertexCache[x1], &s_VertexCache[y1], &s_VertexCache[z1]);
             if (x2 || y2 || z2) rasterize_triangle(&s_VertexCache[x2], &s_VertexCache[y2], &s_VertexCache[z2]);
@@ -458,8 +524,8 @@ static void execute_dl_internal(const Gfx *dl, const Gfx *end, int depth) {
             if (x4 || y4 || z4) rasterize_triangle(&s_VertexCache[x4], &s_VertexCache[y4], &s_VertexCache[z4]);
         } else if (opcode == (u8)G_DL) {
             const Gfx *nextDl = (const Gfx *)resolve_seg_address(w1);
-            if ((uintptr_t)nextDl < 0x1000 || (uintptr_t)nextDl > 0x10000000) nextDl = NULL;
-            if (nextDl && depth < 16) {
+            if (!nextDl || (uintptr_t)nextDl < 0x1000 || (uintptr_t)nextDl > 0x10000000) { cur++; continue; }
+            if (depth < 16) {
                 execute_dl_internal(nextDl, NULL, depth + 1);
             }
             if (w0 & 0x00010000) return; /* Branch */
@@ -478,6 +544,7 @@ void hal_gfx_init(void) {
     memset(s_DepthBuffer, 0xFF, sizeof(s_DepthBuffer));
     memset(s_Tmem, 0, sizeof(s_Tmem));
     memset(&s_Telemetry, 0, sizeof(s_Telemetry));
+    memset(s_Segments, 0, sizeof(s_Segments));
     s_FrameCount = 0;
 
     mtx_identity(s_ProjectionMatrix);

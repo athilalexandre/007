@@ -171,6 +171,8 @@ async function loadLocalDevRom() {
     }
 }
 
+let g_Renderer = null;
+
 function startEngine() {
     if (g_IsRunning) {
         log('Engine already running.', 'warn');
@@ -190,6 +192,11 @@ function startEngine() {
     document.getElementById('current-stage').textContent = 'TITLE (0x5A)';
     document.getElementById('wasm-status-tag').className = 'status-tag status-ok';
     document.getElementById('wasm-status-tag').textContent = 'Active';
+
+    const canvas = document.getElementById('game-canvas');
+    if (window.GBIGLRenderer && !g_Renderer) {
+        g_Renderer = new GBIGLRenderer(canvas, g_Module);
+    }
 
     log('Authentic decompiled engine initialized! Starting display list render loop.', 'ok');
     g_IsRunning = true;
@@ -218,24 +225,32 @@ function renderLoop() {
         return;
     }
 
-    // Present 320x240 RGBA5551 framebuffer to canvas
-    const fbPtr = g_Module._hal_gfx_get_framebuffer();
-    if (fbPtr) {
+    // Present frame using WebGL 2.0 GBI Graphics Engine
+    const fbPtr = g_Module._hal_gfx_get_framebuffer ? g_Module._hal_gfx_get_framebuffer() : 0;
+    if (g_Renderer) {
+        g_Renderer.beginFrame();
+        if (fbPtr) {
+            g_Renderer.renderFramebuffer(fbPtr);
+        }
+        g_Renderer.endFrame();
+    } else if (fbPtr) {
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
-        const imgData = ctx.createImageData(320, 240);
-        const data32 = new Uint32Array(imgData.data.buffer);
-        const fb16 = new Uint16Array(g_Module.HEAPU8.buffer, fbPtr, 320 * 240);
+        if (ctx) {
+            const imgData = ctx.createImageData(320, 240);
+            const data32 = new Uint32Array(imgData.data.buffer);
+            const fb16 = new Uint16Array(g_Module.HEAPU8.buffer, fbPtr, 320 * 240);
 
-        for (let i = 0; i < 320 * 240; i++) {
-            const p = fb16[i];
-            const r = ((p >> 11) & 0x1F) * 255 / 31;
-            const g = ((p >> 6) & 0x1F) * 255 / 31;
-            const b = ((p >> 1) & 0x1F) * 255 / 31;
-            const a = (p & 1) ? 255 : 0;
-            data32[i] = (a << 24) | (b << 16) | (g << 8) | r;
+            for (let i = 0; i < 320 * 240; i++) {
+                const p = fb16[i];
+                const r = ((p >> 11) & 0x1F) * 255 / 31;
+                const g = ((p >> 6) & 0x1F) * 255 / 31;
+                const b = ((p >> 1) & 0x1F) * 255 / 31;
+                const a = (p & 1) ? 255 : 255;
+                data32[i] = (a << 24) | (b << 16) | (g << 8) | r;
+            }
+            ctx.putImageData(imgData, 0, 0);
         }
-        ctx.putImageData(imgData, 0, 0);
     }
 
     // Single-Player Live Telemetry updates
