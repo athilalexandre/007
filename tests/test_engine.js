@@ -120,6 +120,14 @@ GoldenEyeModule().then(async (mod) => {
     assert(fbPtr !== 0, `Framebuffer allocated at 0x${fbPtr.toString(16)}`);
     const fb16 = new Uint16Array(mod.HEAPU8.buffer, fbPtr, 320 * 240);
 
+    // Transition to Dam or step enough frames for rendering
+    if (typeof mod._bossSetLoadedStage === 'function') {
+        mod._bossSetLoadedStage(1);
+        for (let f = 0; f < 20; f++) {
+            mod._hal_engine_step();
+        }
+    }
+
     let nonZeroPixels = 0;
     let distinctPixels = new Set();
     for (let i = 0; i < 320 * 240; i++) {
