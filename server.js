@@ -2,66 +2,48 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 3007;
+const PORT = 8080;
+const WEB_DIR = path.join(__dirname, 'web');
+const BUILD_DIR = path.join(__dirname, 'build', 'web');
 
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
     '.js': 'application/javascript; charset=utf-8',
     '.wasm': 'application/wasm',
-    '.map': 'application/json',
     '.css': 'text/css; charset=utf-8',
-    '.json': 'application/json',
-    '.png': 'image/png',
-    '.ico': 'image/x-icon'
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png'
 };
 
 const server = http.createServer((req, res) => {
-    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    let reqUrl = decodeURIComponent(req.url.split('?')[0]);
+    if (reqUrl === '/') reqUrl = '/index.html';
 
-    const url = new URL(req.url, 'http://localhost:' + PORT);
-    let reqPath = decodeURIComponent(url.pathname);
+    let filePath = path.join(WEB_DIR, reqUrl);
+    if (!fs.existsSync(filePath)) {
+        filePath = path.join(BUILD_DIR, reqUrl);
+    }
+    if (!fs.existsSync(filePath)) {
+        filePath = path.join(__dirname, reqUrl);
+    }
 
-    // Block any attempt to access /assets/ramrom/ or /rom/ or directory traversal
-    if (reqPath.startsWith('/assets/ramrom') || reqPath.startsWith('/rom') || reqPath.includes('..')) {
-        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('403 Forbidden: Direct ROM access is strictly blocked.');
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('404 Not Found');
         return;
     }
 
-    let filePath;
-    if (reqPath === '/' || reqPath === '/index.html') {
-        filePath = path.join(__dirname, 'web', 'index.html');
-    } else if (reqPath.startsWith('/build/web/')) {
-        filePath = path.join(__dirname, reqPath);
-    } else if (reqPath === '/goldeneye007.js' || reqPath === '/goldeneye007.wasm' || reqPath === '/goldeneye007.map') {
-        filePath = path.join(__dirname, 'build', 'web', reqPath);
-    } else {
-        filePath = path.join(__dirname, 'web', reqPath);
-    }
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-    fs.stat(filePath, (err, stats) => {
-        if (err || !stats.isFile()) {
-            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-            res.end('404 Not Found');
-            return;
-        }
-
-        const ext = path.extname(filePath).toLowerCase();
-        const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-        res.writeHead(200, {
-            'Content-Type': contentType,
-            'Content-Length': stats.size,
-            'Cache-Control': 'no-cache'
-        });
-
-        const stream = fs.createReadStream(filePath);
-        stream.pipe(res);
+    res.writeHead(200, {
+        'Content-Type': contentType,
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp'
     });
+    fs.createReadStream(filePath).pipe(res);
 });
 
-server.listen(PORT, () => {
-    console.log('GoldenEye 007 Authentic Engine Test Server running at http://localhost:' + PORT);
+server.listen(PORT, '127.0.0.1', () => {
+    console.log(`GoldenEye Web Server running at http://127.0.0.1:${PORT}`);
 });
