@@ -299,16 +299,51 @@
                         Drag & Drop <code>.z64</code>, <code>.v64</code>, or <code>.n64</code> file here
                     </p>
                     <input type="file" id="rom-file-input" accept=".z64,.v64,.n64,.rom" style="display: none;">
-                    <button class="btn-upload" type="button" onclick="document.getElementById('rom-file-input').click()">Select ROM File</button>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-upload" type="button" style="margin-top: 0;" onclick="document.getElementById('rom-file-input').click()">Select ROM File</button>
+                        <button id="btn-load-workspace-rom" class="btn-upload" type="button" style="margin-top: 0; background: #3b82f6; color: #fff;" onclick="loadLocalDevRom()">Load Workspace ROM</button>
+                    </div>
                 </div>
             </div>
-            <div style="width: 100%; display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-dim);">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--text-dim);">
                 <span>Rasterizer: GBI Software Interp (320&times;240)</span>
+                <button id="btn-launch-dam" class="btn-upload" style="margin: 0; padding: 6px 14px; background: #2563eb; color: #fff;" onclick="launchDamMission()">Launch Mission 1: Dam</button>
                 <span id="fps-counter">0 FPS &middot; 0 Ticks</span>
+            </div>
+            <div id="pointer-lock-hint" style="margin-top: 8px; font-size: 11px; color: #94a3b8;">
+                Click canvas to enable Mouse Look &middot; Press <span class="key-badge">Esc</span> to release cursor
             </div>
         </div>
 
         <div class="sidebar">
+            <div class="info-card">
+                <h2>Single-Player Mission State <span class="status-tag status-idle" id="mission-status-tag">Inactive</span></h2>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Active Mission</span>
+                    <span class="telemetry-val" id="mission-name">Title Screen</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Bond Position (X, Y, Z)</span>
+                    <span class="telemetry-val" id="player-pos">[0.00, 0.00, 0.00]</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Bond Health & Armor</span>
+                    <span class="telemetry-val" id="player-vitals">100% / 0%</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Equipped Weapon</span>
+                    <span class="telemetry-val" id="player-weapon">Unarmed</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Loaded Ammunition</span>
+                    <span class="telemetry-val" id="player-ammo">0 / 0</span>
+                </div>
+                <div class="telemetry-row">
+                    <span class="telemetry-label">Active Guard Slots</span>
+                    <span class="telemetry-val" id="guard-count">0 Loaded</span>
+                </div>
+            </div>
+
             <div class="info-card">
                 <h2>WASM & Engine State <span class="status-tag status-idle" id="wasm-status-tag">Loading</span></h2>
                 <div class="telemetry-row">
@@ -316,16 +351,12 @@
                     <span class="telemetry-val">c4356466 (Clean Ancestor)</span>
                 </div>
                 <div class="telemetry-row">
-                    <span class="telemetry-label">Compiler Toolchain</span>
-                    <span class="telemetry-val">Emscripten 6.0.7 / Clang 23</span>
+                    <span class="telemetry-label">Current Stage ID</span>
+                    <span class="telemetry-val" id="current-stage">None</span>
                 </div>
                 <div class="telemetry-row">
                     <span class="telemetry-label">Engine Lifecycle</span>
                     <span class="telemetry-val" id="engine-lifecycle">Uninitialized</span>
-                </div>
-                <div class="telemetry-row">
-                    <span class="telemetry-label">Current Stage</span>
-                    <span class="telemetry-val" id="current-stage">None</span>
                 </div>
                 <div class="telemetry-row">
                     <span class="telemetry-label">Engine Tick Count</span>
@@ -382,14 +413,16 @@
             </div>
 
             <div class="info-card">
-                <h2>Keyboard Controls</h2>
+                <h2>Authentic Controls</h2>
                 <div class="controls-grid">
-                    <div><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> : Stick / Nav</div>
-                    <div><span class="key-badge">Enter</span> : Start Button</div>
-                    <div><span class="key-badge">J</span> : A Button (Select)</div>
-                    <div><span class="key-badge">K</span> : B Button (Back)</div>
-                    <div><span class="key-badge">Space</span> : Z Trigger (Shoot)</div>
-                    <div><span class="key-badge">Q</span> / <span class="key-badge">E</span> : L / R Triggers</div>
+                    <div><span class="key-badge">W</span> <span class="key-badge">A</span> <span class="key-badge">S</span> <span class="key-badge">D</span> : Move & Strafe</div>
+                    <div><span class="key-badge">Mouse</span> : Look & Aim (Pointer Lock)</div>
+                    <div><span class="key-badge">Left Click</span> : Fire Weapon (Z Trigger)</div>
+                    <div><span class="key-badge">Right Click</span> : Aim Sights (R Trigger)</div>
+                    <div><span class="key-badge">E</span> / <span class="key-badge">Space</span> : Open Doors / Interact (B)</div>
+                    <div><span class="key-badge">R</span> : Weapon Switch / Reload (A)</div>
+                    <div><span class="key-badge">Ctrl</span> / <span class="key-badge">C</span> : Crouch (C-Down)</div>
+                    <div><span class="key-badge">Tab</span> / <span class="key-badge">Enter</span> : Watch Menu / Pause (Start)</div>
                 </div>
             </div>
 

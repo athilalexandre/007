@@ -153,6 +153,24 @@ async function handleRomFile(file) {
     }
 }
 
+async function loadLocalDevRom() {
+    clearError();
+    if (!g_Module) {
+        showError('WebAssembly runtime is still initializing...');
+        return;
+    }
+    log('Fetching local workspace ROM from /assets/ramrom/GoldenEye 007 (USA).z64...', 'info');
+    try {
+        const res = await fetch('/assets/ramrom/GoldenEye%20007%20(USA).z64');
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        const buffer = await res.arrayBuffer();
+        const file = new File([buffer], 'GoldenEye 007 (USA).z64', { type: 'application/octet-stream' });
+        await handleRomFile(file);
+    } catch (err) {
+        showError('Could not load local workspace ROM: ' + err.message);
+    }
+}
+
 function startEngine() {
     if (g_IsRunning) {
         log('Engine already running.', 'warn');
@@ -207,11 +225,54 @@ function renderLoop() {
         ctx.putImageData(imgData, 0, 0);
     }
 
-    // Telemetry updates
-    const ticks = g_Module._hal_engine_get_frame_count ? g_Module._hal_engine_get_frame_count() : 0;
+    // Single-Player Live Telemetry updates
     const stage = g_Module._hal_engine_get_stage_num ? g_Module._hal_engine_get_stage_num() : 90;
+    const ticks = g_Module._hal_engine_get_frame_count ? g_Module._hal_engine_get_frame_count() : 0;
     document.getElementById('engine-ticks').textContent = ticks;
-    document.getElementById('current-stage').textContent = stage === 90 ? 'TITLE (0x5A)' : `Stage ${stage}`;
+    document.getElementById('current-stage').textContent = stage === 90 ? 'TITLE (0x5A)' : `Dam (0x01)`;
+
+    if (stage === 1) {
+        document.getElementById('mission-name').textContent = 'Mission 1: Dam';
+        document.getElementById('mission-status-tag').className = 'status-tag status-ok';
+        document.getElementById('mission-status-tag').textContent = 'Dam Active';
+
+        if (g_Module._hal_player_get_pos_x) {
+            const px = g_Module._hal_player_get_pos_x();
+            const py = g_Module._hal_player_get_pos_y();
+            const pz = g_Module._hal_player_get_pos_z();
+            document.getElementById('player-pos').textContent = `[${px.toFixed(2)}, ${py.toFixed(2)}, ${pz.toFixed(2)}]`;
+        }
+
+        if (g_Module._hal_player_get_health) {
+            const hp = Math.round((g_Module._hal_player_get_health() || 0) * 100);
+            const arm = Math.round((g_Module._hal_player_get_armor() || 0) * 100);
+            document.getElementById('player-vitals').textContent = `${hp}% / ${arm}%`;
+        }
+
+        if (g_Module._hal_player_get_weapon) {
+            const wepId = g_Module._hal_player_get_weapon();
+            const ammo = g_Module._hal_player_get_ammo ? g_Module._hal_player_get_ammo() : 0;
+            const wepNames = {
+                0: 'Unarmed',
+                1: 'PP7 (Special Issue)',
+                2: 'PP7 (Silenced)',
+                3: 'KF7 Soviet',
+                4: 'Klobb',
+                5: 'Sniper Rifle'
+            };
+            document.getElementById('player-weapon').textContent = wepNames[wepId] || `Weapon ID ${wepId}`;
+            document.getElementById('player-ammo').textContent = `${ammo} rounds loaded`;
+        }
+
+        if (g_Module._hal_engine_get_guard_count) {
+            const guards = g_Module._hal_engine_get_guard_count();
+            document.getElementById('guard-count').textContent = `${guards} Active Guards`;
+        }
+    } else {
+        document.getElementById('mission-name').textContent = 'Title Screen';
+        document.getElementById('mission-status-tag').className = 'status-tag status-idle';
+        document.getElementById('mission-status-tag').textContent = 'Inactive';
+    }
 
     const dmaCount = g_Module._hal_os_get_dma_transfers ? g_Module._hal_os_get_dma_transfers() : 0;
     const dmaBytes = g_Module._hal_os_get_dma_bytes ? g_Module._hal_os_get_dma_bytes() : 0;
@@ -241,39 +302,109 @@ function renderLoop() {
         g_LastFpsTime = now;
     }
 
+    // Process inputs and feed authentic controller registers before next frame
+    updateInputs();
+
     g_AnimFrameId = requestAnimationFrame(renderLoop);
 }
 
-// Controller Button Mappings (N64 Controller)
-const KEY_MAP = {
-    'KeyW': 0x0800, // Up
-    'KeyS': 0x0400, // Down
-    'KeyA': 0x0200, // Left
-    'KeyD': 0x0100, // Right
-    'Enter': 0x1000, // Start
-    'KeyJ': 0x8000, // A
-    'KeyK': 0x4000, // B
-    'Space': 0x2000, // Z
-    'KeyQ': 0x0020, // L
-    'KeyE': 0x0010  // R
-};
-
-let g_Buttons = 0;
-window.addEventListener('keydown', (e) => {
-    if (KEY_MAP[e.code]) {
-        g_Buttons |= KEY_MAP[e.code];
-        if (g_Module && g_Module._hal_input_set_buttons) {
-            g_Module._hal_input_set_buttons(g_Buttons, 0, 0);
-        }
+function launchDamMission() {
+    if (!g_Module || !g_IsRunning) {
+        showError('Please mount a valid ROM first before launching Dam mission.');
+        return;
     }
+    log('Launching Mission 1: Dam (Byelomorye) via authentic stage transition...', 'info');
+    g_Module._bossSetLoadedStage(1);
+}
+
+// Input Management & Authentic Controller Translation
+const g_Keys = {};
+let g_MouseLookX = 0;
+let g_MouseLookY = 0;
+let g_MouseButtons = 0;
+
+function updateInputs() {
+    if (!g_Module || !g_Module._hal_input_set_buttons) return;
+
+    let buttons = 0;
+    let stickX = 0;
+    let stickY = 0;
+
+    // Movement: WASD
+    if (g_Keys['KeyW'] || g_Keys['ArrowUp']) stickY += 70;
+    if (g_Keys['KeyS'] || g_Keys['ArrowDown']) stickY -= 70;
+    if (g_Keys['KeyD'] || g_Keys['ArrowRight']) stickX += 70;
+    if (g_Keys['KeyA'] || g_Keys['ArrowLeft']) stickX -= 70;
+
+    // Clamp stick range (-80 to 80)
+    stickX = Math.max(-80, Math.min(80, stickX));
+    stickY = Math.max(-80, Math.min(80, stickY));
+
+    // Mouse look offset
+    if (g_MouseLookX !== 0 || g_MouseLookY !== 0) {
+        stickX = Math.max(-80, Math.min(80, stickX + Math.round(g_MouseLookX * 1.5)));
+        stickY = Math.max(-80, Math.min(80, stickY - Math.round(g_MouseLookY * 1.5)));
+        g_MouseLookX = 0;
+        g_MouseLookY = 0;
+    }
+
+    // Fire weapon: Left Click or Space
+    if ((g_MouseButtons & 1) || g_Keys['Space']) buttons |= 0x2000; // Z Trigger
+
+    // Aim Sights: Right Click or Q
+    if ((g_MouseButtons & 2) || g_Keys['KeyQ']) buttons |= 0x0010; // R Trigger
+
+    // Interact / Open Doors: E or K
+    if (g_Keys['KeyE'] || g_Keys['KeyK']) buttons |= 0x4000; // B Button
+
+    // Weapon Switch / Reload: R or J
+    if (g_Keys['KeyR'] || g_Keys['KeyJ']) buttons |= 0x8000; // A Button
+
+    // Crouch: Ctrl or C
+    if (g_Keys['ControlLeft'] || g_Keys['ControlRight'] || g_Keys['KeyC']) buttons |= 0x0004; // D_CBUTTONS
+
+    // Pause / Watch Menu: Tab or Escape or Enter
+    if (g_Keys['Tab'] || g_Keys['Enter']) buttons |= 0x1000; // Start Button
+
+    g_Module._hal_input_set_buttons(buttons, stickX, stickY);
+}
+
+window.addEventListener('keydown', (e) => {
+    g_Keys[e.code] = true;
+    if (e.code === 'Tab') e.preventDefault();
 });
 
 window.addEventListener('keyup', (e) => {
-    if (KEY_MAP[e.code]) {
-        g_Buttons &= ~KEY_MAP[e.code];
-        if (g_Module && g_Module._hal_input_set_buttons) {
-            g_Module._hal_input_set_buttons(g_Buttons, 0, 0);
-        }
+    g_Keys[e.code] = false;
+});
+
+const gameCanvas = document.getElementById('game-canvas');
+gameCanvas.addEventListener('click', () => {
+    if (document.pointerLockElement !== gameCanvas) {
+        gameCanvas.requestPointerLock();
+    }
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (document.pointerLockElement === gameCanvas) {
+        g_MouseLookX += e.movementX;
+        g_MouseLookY += e.movementY;
+    }
+});
+
+window.addEventListener('mousedown', (e) => {
+    if (e.button === 0) g_MouseButtons |= 1; // Left
+    if (e.button === 2) g_MouseButtons |= 2; // Right
+});
+
+window.addEventListener('mouseup', (e) => {
+    if (e.button === 0) g_MouseButtons &= ~1;
+    if (e.button === 2) g_MouseButtons &= ~2;
+});
+
+window.addEventListener('contextmenu', (e) => {
+    if (document.pointerLockElement === gameCanvas) {
+        e.preventDefault();
     }
 });
 
