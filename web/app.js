@@ -194,6 +194,12 @@ function startEngine() {
     log('Authentic decompiled engine initialized! Starting display list render loop.', 'ok');
     g_IsRunning = true;
 
+    // Trigger authentic transition to Mission 1: Dam
+    log('Automatically transitioning to Mission 1: Dam (Byelomorye)...', 'info');
+    if (g_Module._bossSetLoadedStage) {
+        g_Module._bossSetLoadedStage(1);
+    }
+
     if (g_AnimFrameId) cancelAnimationFrame(g_AnimFrameId);
     g_AnimFrameId = requestAnimationFrame(renderLoop);
 }
@@ -201,9 +207,16 @@ function startEngine() {
 function renderLoop() {
     if (!g_IsRunning) return;
 
-    // Step authentic engine frame
-    g_Module._hal_engine_step();
-    g_FpsFrames++;
+    try {
+        // Step authentic engine frame
+        g_Module._hal_engine_step();
+        g_FpsFrames++;
+    } catch (err) {
+        console.error('[Engine Step Error]:', err);
+        showError('Engine runtime error: ' + err.message);
+        g_IsRunning = false;
+        return;
+    }
 
     // Present 320x240 RGBA5551 framebuffer to canvas
     const fbPtr = g_Module._hal_gfx_get_framebuffer();
